@@ -101,7 +101,14 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 .nav-item:hover { background: var(--line-soft); color: var(--text); }
 .nav-item.is-active { background: var(--raised); color: var(--text); box-shadow: var(--shadow); font-weight: 500; }
 .nav-icon { width: 18px; display: grid; place-items: center; }
-.sidebar-foot { margin-top: auto; padding: 10px; }
+.sidebar-foot { margin-top: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.btn-google { width: 100%; }
+.sync-status { border: 0; background: none; display: flex; align-items: center; gap: 8px; padding: 0; text-align: left; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cat-pessoal); flex: none; }
+.sync-dot.is-syncing { background: var(--accent); animation: pulse 1s infinite alternate; }
+.sync-dot.is-error { background: var(--danger); }
+.sync-dot.is-off { background: var(--muted); }
+@keyframes pulse { to { opacity: 0.3; } }
 .main { overflow: auto; min-width: 0; }
 .page { padding: 20px 28px 40px; display: flex; flex-direction: column; gap: 16px; max-width: 1400px; }
 .page-calendar { height: 100%; max-width: none; padding-bottom: 16px; }

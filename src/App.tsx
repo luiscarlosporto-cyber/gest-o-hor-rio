@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { LocalStore, type DataStore } from './data/store'
+import { signInWithGoogle, supabase } from './data/supabase'
 import { useAppData } from './state/useAppData'
+import { useCloud } from './state/useCloud'
 import { CalendarPage, type View } from './ui/CalendarPage'
 import { SettingsPage, type Theme } from './ui/SettingsPage'
 import { ShiftsPage } from './ui/ShiftsPage'
@@ -17,12 +19,17 @@ const readPref = <T extends string>(key: string, fallback: T): T => {
 }
 
 export default function App({ store: injected }: { store?: DataStore }) {
-  const store = useMemo(() => injected ?? new LocalStore(), [injected])
-  const { data, loaded, error, update, undo } = useAppData(store)
+  const cloud = useCloud(injected)
+  const { store } = cloud
+  const { data, loaded, error, update, undo, reload } = useAppData(store)
+  cloud.onSynced.current = reload
+  const googleLinked = Boolean(cloud.google)
+  const { syncNow } = cloud
   const [page, setPage] = useState<Page>('calendar')
   const [view, setView] = useState<View>(() => readPref<View>('gh:view', 'week'))
   const [cursor, setCursor] = useState(() => new Date())
   const [theme, setTheme] = useState<Theme>(() => readPref<Theme>('gh:theme', 'system'))
+  const [signInError, setSignInError] = useState<string | null>(null)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme === 'system' ? '' : theme
@@ -52,7 +59,37 @@ export default function App({ store: injected }: { store?: DataStore }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [undo])
 
-  if (!loaded) return <div className="splash">A carregar…</div>
+  // Primeira entrada na conta: se a nuvem estiver vazia, envia os dados que estavam neste browser.
+  const migrated = useRef(false)
+  useEffect(() => {
+    if (store.kind !== 'supabase' || !loaded || migrated.current) return
+    migrated.current = true
+    if (data.events.length || data.shiftDays.length) return
+    new LocalStore().load().then((local) => {
+      if (local.events.length || local.shiftDays.length) update(() => local)
+    })
+  }, [store, loaded, data, update])
+
+  // Sincronizar ao abrir, de 5 em 5 minutos e pouco depois de cada alteração.
+  useEffect(() => {
+    if (store.kind !== 'supabase' || !loaded || !googleLinked) return
+    syncNow()
+    const t = window.setInterval(() => document.visibilityState === 'visible' && syncNow(), 5 * 60_000)
+    return () => window.clearInterval(t)
+  }, [store, loaded, googleLinked, syncNow])
+  const firstData = useRef(true)
+  useEffect(() => {
+    if (firstData.current) {
+      firstData.current = false
+      return
+    }
+    if (store.kind !== 'supabase' || !googleLinked) return
+    const t = window.setTimeout(() => syncNow(), 4000)
+    return () => window.clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
+  if (!cloud.ready || !loaded) return <div className="splash">A carregar…</div>
 
   return (
     <div className="app">
@@ -66,17 +103,39 @@ export default function App({ store: injected }: { store?: DataStore }) {
         <NavItem icon={<IconCalendar />} label="Calendário" active={page === 'calendar'} onClick={() => setPage('calendar')} />
         <NavItem icon={<IconShifts />} label="Turnos" active={page === 'shifts'} onClick={() => setPage('shifts')} />
         <NavItem icon={<IconSettings />} label="Definições" active={page === 'settings'} onClick={() => setPage('settings')} />
-        <div className="sidebar-foot muted small">{store.kind === 'local' ? 'Dados neste browser' : 'Sincronizado'}</div>
+        <div className="sidebar-foot small">
+          {supabase && !cloud.session && (
+            <button className="btn btn-google" onClick={() => signInWithGoogle().catch((e) => setSignInError(String(e)))}>
+              Entrar com Google
+            </button>
+          )}
+          {cloud.session ? (
+            <button className="sync-status" onClick={() => setPage('settings')} title={cloud.syncMessage ?? undefined}>
+              <span className={`sync-dot is-${cloud.sync}${googleLinked ? '' : ' is-off'}`} />
+              <span className="muted">
+                {cloud.sync === 'syncing'
+                  ? 'A sincronizar…'
+                  : cloud.sync === 'error'
+                    ? 'Erro na sincronização'
+                    : googleLinked
+                      ? 'Google Calendar ligado'
+                      : 'Google não ligado'}
+              </span>
+            </button>
+          ) : (
+            <span className="muted">Dados neste browser</span>
+          )}
+        </div>
       </nav>
       <main className="main">
-        {error && (
+        {(error || signInError) && (
           <div className="error banner" role="alert">
-            {error}
+            {error ?? signInError}
           </div>
         )}
         {page === 'calendar' && <CalendarPage data={data} update={update} cursor={cursor} setCursor={setCursor} view={view} setView={setView} />}
         {page === 'shifts' && <ShiftsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
-        {page === 'settings' && <SettingsPage data={data} store={store} theme={theme} setTheme={setTheme} update={update} />}
+        {page === 'settings' && <SettingsPage data={data} store={store} theme={theme} setTheme={setTheme} update={update} cloud={cloud} />}
       </main>
     </div>
   )

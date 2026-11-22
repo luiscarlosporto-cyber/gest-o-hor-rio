@@ -12,6 +12,8 @@ export function useAppData(store: DataStore) {
 
   useEffect(() => {
     let alive = true
+    setLoaded(false)
+    history.current = []
     store
       .load()
       .then((d) => alive && (setData(d), setLoaded(true)))
@@ -41,5 +43,14 @@ export function useAppData(store: DataStore) {
     store.save(prev).catch((e: unknown) => setError(`Não foi possível gravar: ${String(e)}`))
   }, [store])
 
-  return { data, loaded, error, update, undo, canUndo: () => history.current.length > 0 }
+  /** Volta a ler do armazenamento (ex.: depois de sincronizar com o Google). */
+  const reload = useCallback(async () => {
+    try {
+      setData(await store.load())
+    } catch (e) {
+      setError(String(e))
+    }
+  }, [store])
+
+  return { data, loaded, error, update, undo, reload, canUndo: () => history.current.length > 0 }
 }
