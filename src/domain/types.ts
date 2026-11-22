@@ -1,3 +1,5 @@
+import type { Task } from './tasks'
+
 /**
  * Tipos do domínio. As datas/horas são guardadas como "hora local flutuante"
  * (ex.: "2026-11-23T08:30"), interpretada no fuso Europe/Lisbon. Isto evita
@@ -79,4 +81,5 @@ export interface AppData {
   events: CalendarEvent[]
   shiftDays: ShiftDay[]
   shiftTypes: ShiftType[]
+  tasks: Task[]
 }

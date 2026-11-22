@@ -148,6 +148,7 @@ describe('turnos', () => {
 describe('conflitos', () => {
   const data: AppData = {
     version: 1,
+    tasks: [],
     shiftTypes: DEFAULT_SHIFT_TYPES,
     shiftDays: [
       { date: '2026-11-23', code: 'M' },
@@ -235,6 +236,7 @@ describe('operações', () => {
   it('pesquisa sem acentos e filtra por categoria', () => {
     const data: AppData = {
       version: 1,
+      tasks: [],
       shiftTypes: DEFAULT_SHIFT_TYPES,
       shiftDays: [{ date: '2026-11-23', code: 'N' }],
       events: [ev({ title: 'Reunião de serviço', location: 'Sala 2' })],

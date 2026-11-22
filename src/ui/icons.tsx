@@ -21,3 +21,10 @@ export const IconSettings = () => (
     <circle cx="10" cy="17" r="2" />
   </svg>
 )
+
+export const IconTasks = () => (
+  <svg {...base}>
+    <rect x="4" y="4" width="16" height="16" rx="4" />
+    <path d="m8.5 12 2.5 2.5 4.5-5" />
+  </svg>
+)

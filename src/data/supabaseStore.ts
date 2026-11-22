@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { DEFAULT_SHIFT_TYPES } from '../domain/shifts'
+import type { Task } from '../domain/tasks'
 import type { AppData, CalendarEvent, ShiftDay, ShiftType } from '../domain/types'
 import type { DataStore } from './store'
 
@@ -35,7 +36,51 @@ interface ShiftTypeRow {
   sort_order: number
 }
 
+interface TaskRow {
+  id: string
+  user_id: string
+  title: string
+  notes: string | null
+  due_date: string | null
+  due_time: string | null
+  priority: Task['priority']
+  done: boolean
+  done_at: string | null
+  source: string
+  created_at?: string
+  updated_at?: string
+}
+
 const hm = (t: string | null) => (t ? t.slice(0, 5) : undefined)
+
+export const rowToTask = (r: TaskRow): Task => ({
+  id: r.id,
+  title: r.title,
+  notes: r.notes ?? undefined,
+  due: r.due_date ?? undefined,
+  dueTime: hm(r.due_time),
+  priority: r.priority,
+  done: r.done,
+  doneAt: r.done_at ?? undefined,
+  source: r.source === 'gmail' ? 'gmail' : 'manual',
+  createdAt: r.created_at ?? '',
+  updatedAt: r.updated_at ?? '',
+})
+
+export const taskToRow = (t: Task, userId: string): TaskRow => ({
+  id: t.id,
+  user_id: userId,
+  title: t.title,
+  notes: t.notes ?? null,
+  due_date: t.due ?? null,
+  due_time: t.due && t.dueTime ? t.dueTime : null,
+  priority: t.priority,
+  done: t.done,
+  done_at: t.doneAt ?? null,
+  source: t.source ?? 'manual',
+})
+
+const taskKey = (t: Task) => JSON.stringify([t.title, t.notes, t.due, t.dueTime, t.priority, t.done, t.doneAt])
 
 export function rowToEvent(r: EventRow): CalendarEvent {
   return {
@@ -101,12 +146,13 @@ export class SupabaseStore implements DataStore {
   }
 
   async load(): Promise<AppData> {
-    const [ev, sd, st] = await Promise.all([
+    const [ev, sd, st, tk] = await Promise.all([
       this.db.from('events').select('*').is('deleted_at', null),
       this.db.from('shift_days').select('day, code').is('deleted_at', null),
       this.db.from('shift_types').select('*').order('sort_order'),
+      this.db.from('tasks').select('*'),
     ])
-    for (const r of [ev, sd, st]) if (r.error) throw new Error(r.error.message)
+    for (const r of [ev, sd, st, tk]) if (r.error) throw new Error(r.error.message)
     const types = (st.data as ShiftTypeRow[]).map<ShiftType>((t) => ({
       code: t.code,
       label: t.label,
@@ -120,6 +166,7 @@ export class SupabaseStore implements DataStore {
       events: (ev.data as EventRow[]).map(rowToEvent),
       shiftDays: (sd.data as { day: string; code: string }[]).map<ShiftDay>((r) => ({ date: r.day, code: r.code })),
       shiftTypes: types.length ? types : DEFAULT_SHIFT_TYPES,
+      tasks: ((tk.data ?? []) as TaskRow[]).map(rowToTask),
     }
     this.last = data
     return data
@@ -132,7 +179,7 @@ export class SupabaseStore implements DataStore {
   }
 
   private async write(next: AppData) {
-    const prev = this.last ?? { version: 1 as const, events: [], shiftDays: [], shiftTypes: [] }
+    const prev: AppData = this.last ?? { version: 1, events: [], shiftDays: [], shiftTypes: [], tasks: [] }
     this.last = next
     const uid = this.userId
     const now = new Date().toISOString()
@@ -174,6 +221,14 @@ export class SupabaseStore implements DataStore {
       const gone = prev.shiftTypes.filter((t) => !next.shiftTypes.some((n) => n.code === t.code)).map((t) => t.code)
       if (gone.length) await check(this.db.from('shift_types').delete().eq('user_id', uid).in('code', gone))
     }
+
+    // Tarefas (só na app; não vão para o Google)
+    const prevTk = new Map(prev.tasks.map((t) => [t.id, t]))
+    const nextTk = new Set(next.tasks.map((t) => t.id))
+    const tkChanged = next.tasks.filter((t) => !prevTk.has(t.id) || taskKey(prevTk.get(t.id)!) !== taskKey(t)).map((t) => taskToRow(t, uid))
+    const tkRemoved = prev.tasks.filter((t) => !nextTk.has(t.id)).map((t) => t.id)
+    if (tkChanged.length) await check(this.db.from('tasks').upsert(tkChanged))
+    if (tkRemoved.length) await check(this.db.from('tasks').delete().in('id', tkRemoved))
   }
 }
 

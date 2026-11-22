@@ -16,6 +16,7 @@ export const emptyData = (): AppData => ({
   events: [],
   shiftDays: [],
   shiftTypes: DEFAULT_SHIFT_TYPES,
+  tasks: [],
 })
 
 const KEY = 'gestao-horario:v1'
@@ -36,6 +37,7 @@ export class LocalStore implements DataStore {
         ...emptyData(),
         ...parsed,
         shiftTypes: parsed.shiftTypes?.length ? parsed.shiftTypes : DEFAULT_SHIFT_TYPES,
+        tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
         version: 1,
       }
     } catch {
@@ -58,5 +60,5 @@ export function importJson(text: string): AppData {
   if (!Array.isArray(parsed.events) || !Array.isArray(parsed.shiftDays)) {
     throw new Error('Ficheiro inválido: faltam eventos ou turnos.')
   }
-  return { ...emptyData(), ...parsed, version: 1 }
+  return { ...emptyData(), ...parsed, tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [], version: 1 }
 }

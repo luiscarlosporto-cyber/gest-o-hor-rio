@@ -6,9 +6,11 @@ import { useCloud } from './state/useCloud'
 import { CalendarPage, type View } from './ui/CalendarPage'
 import { SettingsPage, type Theme } from './ui/SettingsPage'
 import { ShiftsPage } from './ui/ShiftsPage'
-import { IconCalendar, IconSettings, IconShifts } from './ui/icons'
+import { IconCalendar, IconSettings, IconShifts, IconTasks } from './ui/icons'
+import { TasksPage } from './ui/TasksPage'
+import { pendingCount } from './domain/tasks'
 
-type Page = 'calendar' | 'shifts' | 'settings'
+type Page = 'calendar' | 'tasks' | 'shifts' | 'settings'
 
 const readPref = <T extends string>(key: string, fallback: T): T => {
   try {
@@ -64,9 +66,9 @@ export default function App({ store: injected }: { store?: DataStore }) {
   useEffect(() => {
     if (store.kind !== 'supabase' || !loaded || migrated.current) return
     migrated.current = true
-    if (data.events.length || data.shiftDays.length) return
+    if (data.events.length || data.shiftDays.length || data.tasks.length) return
     new LocalStore().load().then((local) => {
-      if (local.events.length || local.shiftDays.length) update(() => local)
+      if (local.events.length || local.shiftDays.length || local.tasks.length) update(() => local)
     })
   }, [store, loaded, data, update])
 
@@ -101,6 +103,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
           <span>Gestão Horário</span>
         </div>
         <NavItem icon={<IconCalendar />} label="Calendário" active={page === 'calendar'} onClick={() => setPage('calendar')} />
+        <NavItem icon={<IconTasks />} label="Tarefas" badge={pendingCount(data.tasks, new Date())} active={page === 'tasks'} onClick={() => setPage('tasks')} />
         <NavItem icon={<IconShifts />} label="Turnos" active={page === 'shifts'} onClick={() => setPage('shifts')} />
         <NavItem icon={<IconSettings />} label="Definições" active={page === 'settings'} onClick={() => setPage('settings')} />
         <div className="sidebar-foot small">
@@ -134,6 +137,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
           </div>
         )}
         {page === 'calendar' && <CalendarPage data={data} update={update} cursor={cursor} setCursor={setCursor} view={view} setView={setView} />}
+        {page === 'tasks' && <TasksPage data={data} update={update} />}
         {page === 'shifts' && <ShiftsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
         {page === 'settings' && <SettingsPage data={data} store={store} theme={theme} setTheme={setTheme} update={update} cloud={cloud} />}
       </main>
@@ -141,13 +145,18 @@ export default function App({ store: injected }: { store?: DataStore }) {
   )
 }
 
-function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: string; active: boolean; onClick: () => void }) {
+function NavItem({ icon, label, active, onClick, badge }: { icon: ReactNode; label: string; active: boolean; onClick: () => void; badge?: number }) {
   return (
     <button className={`nav-item${active ? ' is-active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}>
       <span className="nav-icon" aria-hidden>
         {icon}
       </span>
       <span className="nav-label">{label}</span>
+      {badge ? (
+        <span className="nav-badge" aria-label={`${badge} para hoje ou atrasadas`}>
+          {badge}
+        </span>
+      ) : null}
     </button>
   )
 }
