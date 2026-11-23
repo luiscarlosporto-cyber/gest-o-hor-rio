@@ -20,6 +20,8 @@ export function SisqualImport({ data, update, onApplied }: Props) {
 
   const setEmployee = (employeeNumber: string) => update((d) => ({ ...d, pay: { ...(d.pay ?? defaultPaySettings()), employeeNumber: employeeNumber.trim() || undefined } }))
 
+  const numberInput = useRef<HTMLInputElement>(null)
+
   const read = async (f: File) => {
     setError(null)
     setRoster(null)
@@ -50,10 +52,19 @@ export function SisqualImport({ data, update, onApplied }: Props) {
       <div className="sisqual-row">
         <label className="field">
           <span>N.º mecanográfico</span>
-          <input value={employee} onChange={(e) => setEmployee(e.target.value)} inputMode="numeric" placeholder="ex.: 71402" />
+          <input ref={numberInput} value={employee} onChange={(e) => setEmployee(e.target.value)} inputMode="numeric" placeholder="escreve o teu número" aria-invalid={Boolean(error && !employee)} />
         </label>
         <input ref={file} type="file" accept="application/pdf,.pdf" hidden onChange={(e) => e.target.files?.[0] && read(e.target.files[0])} />
-        <button className="btn btn-primary" onClick={() => file.current?.click()} disabled={busy || !employee}>
+        <button
+          className="btn btn-primary"
+          disabled={busy}
+          onClick={() => {
+            if (employee) return file.current?.click()
+            // Sem número não se sabe qual é a tua linha no PDF: diz porquê em vez de deixar o botão apagado.
+            setError('Escreve primeiro o teu número mecanográfico (fica guardado para os próximos meses).')
+            numberInput.current?.focus()
+          }}
+        >
           {busy ? 'A ler…' : 'Escolher PDF'}
         </button>
       </div>
