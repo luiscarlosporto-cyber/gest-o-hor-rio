@@ -156,3 +156,21 @@ export function mergeShiftDays(existing: ShiftDay[], incoming: ShiftDay[]): Shif
   }
   return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))
 }
+
+/** Código da saída da noite no SISQUAL: tem de vir logo a seguir a uma noite. */
+export const NIGHT_EXIT_CODE = 'D'
+
+const crossesMidnight = (t?: ShiftType) => Boolean(t?.work && t.start && t.end && t.end <= t.start)
+
+/** Erros no horário: um D sem uma noite no dia anterior. */
+export function shiftErrors(days: ShiftDay[], types: ShiftType[]): { date: DateKey; message: string }[] {
+  const byDate = new Map(days.map((d) => [d.date, d.code]))
+  const out: { date: DateKey; message: string }[] = []
+  for (const d of days) {
+    if (d.code !== NIGHT_EXIT_CODE) continue
+    const prev = byDate.get(toDateKey(addDays(parseLocal(d.date), -1)))
+    if (prev === undefined) continue // dia anterior por preencher: não dá para saber
+    if (!crossesMidnight(findType(types, prev))) out.push({ date: d.date, message: `D sem noite antes (dia anterior: ${prev})` })
+  }
+  return out
+}

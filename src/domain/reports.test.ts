@@ -41,11 +41,11 @@ describe('painel de hoje', () => {
 })
 
 describe('saída da noite', () => {
-  it('um D a seguir à N não é folga, um D a seguir a outro D é', () => {
+  it('um D a seguir à N é saída da noite; um D a seguir a outro D é erro, nunca folga', () => {
     const d: AppData = { ...data(), shiftDays: [{ date: '2026-11-25', code: 'N' }, { date: '2026-11-26', code: 'D' }, { date: '2026-11-27', code: 'D' }] }
     expect(isNightExit(d, '2026-11-26')).toBe(true)
     expect(isNightExit(d, '2026-11-27')).toBe(false)
-    expect(todayOverview(d, new Date(2026, 10, 25, 12)).nextDayOff).toBe('2026-11-27')
+    expect(todayOverview(d, new Date(2026, 10, 25, 12)).nextDayOff).toBeUndefined()
   })
 })
 
@@ -72,5 +72,23 @@ describe('relatório mensal', () => {
     expect(csv.startsWith('﻿Data;Dia da semana;Turno')).toBe(true)
     expect(csv).toContain('2026-11-23;segunda-feira;MT2;Manhã e tarde;14,00;;1')
     expect(csv).toContain('Total de horas;;;;39,00')
+  })
+})
+
+describe('D tem de vir depois de uma N', () => {
+  it('assinala o D sem N antes e não o conta como folga', () => {
+    const d: AppData = {
+      ...data(),
+      shiftDays: [
+        { date: '2026-11-23', code: 'N' },
+        { date: '2026-11-24', code: 'D' },
+        { date: '2026-11-25', code: 'D' }, // erro
+        { date: '2026-11-26', code: 'F' },
+      ],
+    }
+    const r = monthReport(d, 2026, 10)
+    expect(r.errors.map((e) => e.date)).toEqual(['2026-11-25'])
+    expect(r.daysOff).toBe(1) // só o F
+    expect(todayOverview(d, new Date(2026, 10, 23, 12)).nextDayOff).toBe('2026-11-26')
   })
 })

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { formatMonthYear } from '../domain/dates'
 import { defaultPaySettings } from '../domain/payroll'
+import { shiftErrors } from '../domain/shifts'
 import { applyRoster, rosterChanges, type SisqualRoster } from '../domain/sisqual'
 import type { AppData } from '../domain/types'
 
@@ -37,6 +38,9 @@ export function SisqualImport({ data, update, onApplied }: Props) {
 
   const changes = roster ? rosterChanges(data.shiftDays, roster) : []
   const extras = roster?.days.filter((d) => d.extra) ?? []
+  const errors = roster
+    ? shiftErrors(applyRoster(data, roster).shiftDays, data.shiftTypes).filter((e) => e.date.startsWith(`${roster.year}-${String(roster.month + 1).padStart(2, '0')}-`))
+    : []
   const unknown = [...new Set(roster?.days.filter((d) => d.unknown).map((d) => d.raw) ?? [])]
 
   return (
@@ -65,6 +69,7 @@ export function SisqualImport({ data, update, onApplied }: Props) {
           <p className="small">
             {roster.days.length} dias, {extras.length} {extras.length === 1 ? 'extra' : 'extras'}. {changes.length === 0 ? 'Igual ao que já tens.' : `${changes.length} ${changes.length === 1 ? 'dia muda' : 'dias mudam'}.`}
           </p>
+          {errors.length > 0 && <p className="warn">D sem N antes em {errors.map((e) => Number(e.date.slice(8))).join(', ')}. Confirma o horário.</p>}
           {unknown.length > 0 && (
             <p className="warn">
               Códigos novos: <strong>{unknown.join(', ')}</strong>. Ficam como dia sem trabalho; podes acertar as horas em baixo.

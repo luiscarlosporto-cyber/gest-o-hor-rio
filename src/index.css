@@ -441,3 +441,4 @@ kbd { font-family: inherit; font-size: 12px; border: 1px solid var(--line); bord
 .chip-toggle.is-on { background: var(--text, #222); color: var(--panel, #fff); border-color: transparent; }
 .salary-table .is-deduction td, .salary-table .is-deduction th { color: var(--muted); }
 .salary-table .net th, .salary-table .net td { font-size: 16px; border-top: 2px solid var(--line); }
+.shift-cell.is-error { outline: 2px solid #c62828; outline-offset: -2px; }

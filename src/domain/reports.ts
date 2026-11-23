@@ -1,7 +1,7 @@
 import { findConflicts } from './conflicts'
 import { addDays, daysInMonth, minutesBetween, parseLocal, startOfDay, toDateKey } from './dates'
 import { occurrencesIn } from './operations'
-import { findType, paidTimes, summarizeMonth, type MonthSummary } from './shifts'
+import { findType, NIGHT_EXIT_CODE, paidTimes, shiftErrors, summarizeMonth, type MonthSummary } from './shifts'
 import { groupTasks, type Task } from './tasks'
 import type { AppData, Category, DateKey, Occurrence, ShiftType } from './types'
 
@@ -76,7 +76,7 @@ export function todayOverview(data: AppData, now: Date): TodayOverview {
     const key = toDateKey(addDays(today, i))
     const sd = data.shiftDays.find((s) => s.date === key)
     const type = sd ? findType(data.shiftTypes, sd.code) : undefined
-    if (sd && !type?.work && !isNightExit(data, key)) {
+    if (sd && !type?.work && sd.code !== NIGHT_EXIT_CODE && !isNightExit(data, key)) {
       nextDayOff = key
       break
     }
@@ -123,6 +123,8 @@ export interface MonthReport {
   daysOff: number
   /** Dias de saída da noite (contam como trabalho, não como folga). */
   nightExits: number
+  /** Dias com erro no horário (ex.: D sem N antes). */
+  errors: { date: DateKey; message: string }[]
   /** Maior sequência de dias seguidos com turno de trabalho. */
   longestStreak: number
   /** Horas de turno por semana (segunda a domingo) que toca o mês. */
@@ -173,7 +175,7 @@ export function monthReport(data: AppData, year: number, month: number): MonthRe
     if (type?.work && weekend) weekendsWorked++
     const nightExit = isNightExit(data, key)
     if (nightExit) nightExits++
-    else if (sd && !type?.work) daysOff++
+    else if (sd && !type?.work && sd.code !== NIGHT_EXIT_CODE) daysOff++
     streak = type?.work || nightExit ? streak + 1 : 0
     longestStreak = Math.max(longestStreak, streak)
     days.push({
@@ -219,6 +221,7 @@ export function monthReport(data: AppData, year: number, month: number): MonthRe
     weekendsWorked,
     daysOff,
     nightExits,
+    errors: shiftErrors(data.shiftDays, data.shiftTypes).filter((e) => e.date.startsWith(prefix)),
     longestStreak,
     weeks,
     eventMinutes,

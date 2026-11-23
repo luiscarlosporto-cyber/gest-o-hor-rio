@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { addMonths, daysInMonth, formatMonthYear, monthGrid, toDateKey, weekdayShort } from '../domain/dates'
-import { mergeShiftDays, parseRosterLine, summarizeMonth, findType, type RosterParseResult } from '../domain/shifts'
+import { mergeShiftDays, parseRosterLine, shiftErrors, summarizeMonth, findType, type RosterParseResult } from '../domain/shifts'
 import type { AppData, ShiftDay, ShiftType } from '../domain/types'
 import { SisqualImport } from './SisqualImport'
 
@@ -24,6 +24,9 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
   const extras = useMemo(() => new Set(data.shiftDays.filter((d) => d.extra).map((d) => d.date)), [data.shiftDays])
   const summary = useMemo(() => summarizeMonth(data.shiftDays, data.shiftTypes, year, month), [data, year, month])
   const grid = monthGrid(cursor)
+  const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}-`
+  const errors = useMemo(() => shiftErrors(data.shiftDays, data.shiftTypes).filter((e) => e.date.startsWith(monthPrefix)), [data.shiftDays, data.shiftTypes, monthPrefix])
+  const errorDates = new Set(errors.map((e) => e.date))
 
   const setDay = (date: string, code: string) =>
     update((d) => ({ ...d, shiftDays: mergeShiftDays(d.shiftDays, [extras.has(date) ? { date, code, extra: true } : { date, code }]) }))
@@ -153,6 +156,12 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
 
       <section className="card">
         <h2>Editar dia a dia</h2>
+        {errors.length > 0 && (
+          <p className="warn" role="alert">
+            {errors.length === 1 ? 'Há um erro' : `Há ${errors.length} erros`} no horário: o D tem de vir logo a seguir a uma N. Vê{' '}
+            {errors.map((e) => Number(e.date.slice(8))).join(', ')}.
+          </p>
+        )}
         <div className="shift-grid" role="grid">
           {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((h) => (
             <div key={h} className="shift-grid-head">
@@ -167,7 +176,8 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
             return (
               <label
                 key={key}
-                className={`shift-cell${outside ? ' is-outside' : ''}`}
+                className={`shift-cell${outside ? ' is-outside' : ''}${errorDates.has(key) ? ' is-error' : ''}`}
+                title={errors.find((e) => e.date === key)?.message}
                 style={type ? { ['--chip' as string]: type.color } : undefined}
               >
                 <span className="shift-cell-day">

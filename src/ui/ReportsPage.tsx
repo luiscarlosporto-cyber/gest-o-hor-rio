@@ -58,6 +58,12 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
         </div>
       </header>
 
+      {r.errors.length > 0 && (
+        <p className="warn" role="alert">
+          Erro no horário: D sem N antes em {r.errors.map((e) => parseLocal(e.date).getDate()).join(', ')}. As contas destes dias podem estar erradas.
+        </p>
+      )}
+
       <div className="stats">
         <Stat label="Horas de turno" value={fmtHours(r.summary.workedMinutes)} note={r.deltaMinutes ? `${r.deltaMinutes > 0 ? '+' : ''}${fmtHours(r.deltaMinutes)} que no mês anterior` : 'igual ao mês anterior'} />
         <Stat label="Dias de trabalho" value={String(r.summary.workDays)} note={`${r.nightExits ? `${r.nightExits} ${r.nightExits === 1 ? 'saída' : 'saídas'} da noite, ` : ''}${r.daysOff} de folga ou descanso`} />
