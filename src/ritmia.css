@@ -255,3 +255,10 @@ input:not([type='checkbox']):not([type='radio']):not([type='range']), select, te
 .chip-shift, .badge { color: var(--chip-ink, var(--shift-ink)); }
 .chip-shift { border-radius: var(--radius-pill); padding: 1px 9px; font-weight: 700; }
 .shift-cell { border-radius: var(--radius-sm); }
+
+/* Criação rápida por escrita */
+.quick-event { display: flex; gap: var(--s2); }
+.quick-event input { flex: 1; min-width: 0; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--shadow); }
+.quick-event input::placeholder { color: var(--muted); }
+.home-salary { margin: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 10px; border-top: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
+.home-salary strong { font-family: var(--font-display); font-size: var(--text-lg); }

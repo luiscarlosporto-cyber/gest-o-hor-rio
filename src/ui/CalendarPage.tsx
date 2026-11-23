@@ -1,3 +1,4 @@
+import { parseQuickEvent } from '../domain/quickEvent'
 import { chipStyle } from '../domain/shiftFamily'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { findConflicts, freeSlots } from '../domain/conflicts'
@@ -62,6 +63,7 @@ const FILTERS = [{ id: 'turno', label: 'Turnos' }, ...CATEGORIES]
 
 export function CalendarPage({ data, update, cursor, setCursor, view, setView }: Props) {
   const [editor, setEditor] = useState<EditorTarget | null>(null)
+  const [quick, setQuick] = useState('')
   const [shiftPick, setShiftPick] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<string[]>([])
@@ -180,6 +182,28 @@ export function CalendarPage({ data, update, cursor, setCursor, view, setView }:
           </button>
         </div>
       </header>
+
+      <form
+        className="quick-event"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (!quick.trim()) return
+          const q = parseQuickEvent(quick, new Date())
+          setEditor({ start: q.start, preset: { title: q.title, end: q.end, allDay: q.allDay, category: q.category, location: q.location } })
+          setQuick('')
+        }}
+      >
+        <input
+          value={quick}
+          onChange={(e) => setQuick(e.target.value)}
+          placeholder="Escreve, por exemplo: dentista sexta 10h"
+          aria-label="Criar compromisso por escrita"
+          enterKeyHint="go"
+        />
+        <button className="btn btn-primary" type="submit" disabled={!quick.trim()}>
+          Criar
+        </button>
+      </form>
 
       <div className="filters" role="group" aria-label="Filtros">
         {FILTERS.map((f) => (

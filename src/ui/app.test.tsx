@@ -26,6 +26,28 @@ describe('app', () => {
     vi.setSystemTime(new Date(2026, 10, 23, 9, 0)) // segunda, 23/11/2026
   })
 
+  it('mostra no início o talão previsto do mês seguinte, só com o nível definido', async () => {
+    const pay = { category: 'Enfermeiro especialista', position: 5, level: 37, weeklyHours: 35, municipalHolidays: ['11-11'], irsPct: 20 }
+    const store = new MemoryStore({ ...emptyData(), pay, shiftDays: [{ date: '2026-11-23', code: 'M' }] })
+    render(<App store={store} />)
+    expect(await screen.findByText('Talão de dezembro (previsto)')).toBeInTheDocument()
+    expect(screen.getByText(/líquido/)).toBeInTheDocument()
+  })
+
+  it('cria um compromisso por escrita: o editor abre preenchido e só grava ao confirmar', async () => {
+    const store = new MemoryStore()
+    const user = userEvent.setup()
+    render(<App store={store} />)
+    await user.click(within(await screen.findByRole('navigation')).getByRole('button', { name: 'Calendário' }))
+    await user.type(await screen.findByLabelText('Criar compromisso por escrita'), 'Dentista sexta 10h @ Penafiel{Enter}')
+    const dialog = screen.getByRole('dialog', { name: 'Novo evento' })
+    expect(within(dialog).getByLabelText('Título')).toHaveValue('Dentista')
+    expect(store.data.events).toHaveLength(0)
+    await user.click(within(dialog).getByRole('button', { name: 'Gravar' }))
+    await waitFor(() => expect(store.data.events).toHaveLength(1))
+    expect(store.data.events[0]).toMatchObject({ title: 'Dentista', category: 'pessoal', start: '2026-11-27T10:00', end: '2026-11-27T11:00', location: 'Penafiel' })
+  })
+
   it('cria um evento a partir do botão Novo e grava-o', async () => {
     const store = new MemoryStore()
     const user = userEvent.setup()

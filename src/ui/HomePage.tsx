@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { formatLongDate, parseLocal, timeOf, toDateKey, weekdayShort } from '../domain/dates'
+import { formatLongDate, monthName, parseLocal, timeOf, toDateKey, weekdayShort } from '../domain/dates'
+import { projectSalary } from '../domain/payroll'
 import { fmtHours, todayOverview } from '../domain/reports'
 import { countdown, dayPart, FAMILY_LABEL, shiftFamily, type DayPart, type ShiftFamily } from '../domain/shiftFamily'
 import { findType, summarizeMonth } from '../domain/shifts'
@@ -55,6 +56,11 @@ export function HomePage({ data, update, now: fixedNow, go }: Props) {
   const hero = o.currentShift ?? o.nextShift
   const heroInfo = shiftInfo(hero)
   const month = useMemo(() => summarizeMonth(data.shiftDays, data.shiftTypes, now.getFullYear(), now.getMonth()), [data, now.getFullYear(), now.getMonth()]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // O talão do mês seguinte paga o trabalho deste mês. Só aparece com o nível ou o valor base definido.
+  const payslipDate = new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  const salary = useMemo(() => projectSalary(data, payslipDate.getFullYear(), payslipDate.getMonth()), [data, payslipDate.getFullYear(), payslipDate.getMonth()]) // eslint-disable-line react-hooks/exhaustive-deps
+  const eur = (n: number) => n.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 })
 
   const allDay = o.agenda.filter((a) => a.allDay)
   const timed = o.agenda.filter((a) => !a.allDay)
@@ -195,6 +201,20 @@ export function HomePage({ data, update, now: fixedNow, go }: Props) {
                 ))}
               </ul>
             </>
+          )}
+          {salary && (
+            <p className="home-salary">
+              <span className="muted small">Talão de {monthName(salary.month).toLowerCase()} (previsto)</span>
+              <span>
+                <strong>{eur(salary.gross)}</strong> bruto
+                {salary.notes.some((n) => n.startsWith('Sem taxa de IRS')) ? null : (
+                  <>
+                    {' · '}
+                    <strong>{eur(salary.net)}</strong> líquido
+                  </>
+                )}
+              </span>
+            </p>
           )}
           <button className="btn btn-sm home-link" onClick={() => go('reports')}>
             Relatórios e vencimento

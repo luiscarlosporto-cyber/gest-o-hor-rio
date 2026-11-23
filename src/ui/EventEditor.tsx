@@ -12,6 +12,8 @@ export interface EditorTarget {
   occurrence?: Occurrence
   /** Início sugerido para um evento novo. */
   start?: Date
+  /** Novo evento já preenchido (criação rápida por escrita); o utilizador confirma no editor. */
+  preset?: { title: string; end: Date; allDay: boolean; category: Category; location?: string }
 }
 
 interface Props {
@@ -26,20 +28,20 @@ const DAY_LABELS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D']
 const DAY_NAMES = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo']
 
 export function EventEditor({ target, others, onSave, onDelete, onClose }: Props) {
-  const { event, occurrence } = target
+  const { event, occurrence, preset } = target
   const isSeries = Boolean(event?.rrule)
   const baseStart = occurrence?.start ?? (event ? parseLocal(event.start) : target.start ?? new Date())
-  const baseEnd = occurrence?.end ?? (event ? parseLocal(event.end) : new Date(baseStart.getTime() + 60 * 60_000))
+  const baseEnd = occurrence?.end ?? (event ? parseLocal(event.end) : preset?.end ?? new Date(baseStart.getTime() + 60 * 60_000))
   const repeat = parseRRule(event?.rrule)
 
-  const [title, setTitle] = useState(event?.title ?? '')
-  const [category, setCategory] = useState<Category>(event?.category ?? 'reuniao')
-  const [allDay, setAllDay] = useState(event?.allDay ?? false)
+  const [title, setTitle] = useState(event?.title ?? preset?.title ?? '')
+  const [category, setCategory] = useState<Category>(event?.category ?? preset?.category ?? 'reuniao')
+  const [allDay, setAllDay] = useState(event?.allDay ?? preset?.allDay ?? false)
   const [date, setDate] = useState(toDateKey(baseStart))
   const [startTime, setStartTime] = useState(timeOf(baseStart))
   const [endTime, setEndTime] = useState(timeOf(baseEnd))
   const [endDate, setEndDate] = useState(toDateKey(allDay ? addDays(baseEnd, -1) : baseEnd))
-  const [location, setLocation] = useState(event?.location ?? '')
+  const [location, setLocation] = useState(event?.location ?? preset?.location ?? '')
   const [notes, setNotes] = useState(event?.notes ?? '')
   const [freq, setFreq] = useState<RepeatFreq>(repeat.freq)
   const [byWeekday, setByWeekday] = useState<number[]>(repeat.byWeekday ?? [(baseStart.getDay() + 6) % 7])
