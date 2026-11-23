@@ -1,16 +1,21 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { LocalStore, type DataStore } from './data/store'
 import { signInWithGoogle, supabase } from './data/supabase'
 import { useAppData } from './state/useAppData'
 import { useCloud } from './state/useCloud'
-import { CalendarPage, type View } from './ui/CalendarPage'
-import { SettingsPage, type Theme } from './ui/SettingsPage'
-import { ShiftsPage } from './ui/ShiftsPage'
+import type { View } from './ui/CalendarPage'
+import type { Theme } from './ui/SettingsPage'
 import { IconCalendar, IconHome, IconReport, IconSettings, IconShifts, IconTasks } from './ui/icons'
 import { HomePage } from './ui/HomePage'
-import { ReportsPage } from './ui/ReportsPage'
-import { TasksPage } from './ui/TasksPage'
 import { pendingCount } from './domain/tasks'
+import { onUpdateReady } from './pwa'
+
+// Cada ecrã é carregado só quando é aberto (o Início vem logo no arranque).
+const CalendarPage = lazy(() => import('./ui/CalendarPage').then((m) => ({ default: m.CalendarPage })))
+const SettingsPage = lazy(() => import('./ui/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const ShiftsPage = lazy(() => import('./ui/ShiftsPage').then((m) => ({ default: m.ShiftsPage })))
+const ReportsPage = lazy(() => import('./ui/ReportsPage').then((m) => ({ default: m.ReportsPage })))
+const TasksPage = lazy(() => import('./ui/TasksPage').then((m) => ({ default: m.TasksPage })))
 
 type Page = 'home' | 'calendar' | 'tasks' | 'shifts' | 'reports' | 'settings'
 
@@ -34,6 +39,8 @@ export default function App({ store: injected }: { store?: DataStore }) {
   const [cursor, setCursor] = useState(() => new Date())
   const [theme, setTheme] = useState<Theme>(() => readPref<Theme>('gh:theme', 'system'))
   const [signInError, setSignInError] = useState<string | null>(null)
+  const [applyUpdate, setApplyUpdate] = useState<(() => void) | null>(null)
+  useEffect(() => onUpdateReady((apply) => setApplyUpdate(() => apply)), [])
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme === 'system' ? '' : theme
@@ -135,11 +142,20 @@ export default function App({ store: injected }: { store?: DataStore }) {
         </div>
       </nav>
       <main className="main">
+        {applyUpdate && (
+          <div className="update banner" role="status">
+            <span>Há uma versão nova da app.</span>
+            <button className="btn btn-sm btn-primary" onClick={applyUpdate}>
+              Atualizar
+            </button>
+          </div>
+        )}
         {(error || signInError) && (
           <div className="error banner" role="alert">
             {error ?? signInError}
           </div>
         )}
+        <Suspense fallback={<div className="page-loading" aria-busy="true" />}>
         {page === 'home' && (
           <HomePage
             data={data}
@@ -155,6 +171,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
         {page === 'tasks' && <TasksPage data={data} update={update} cloud={cloud} />}
         {page === 'shifts' && <ShiftsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
         {page === 'settings' && <SettingsPage data={data} store={store} theme={theme} setTheme={setTheme} update={update} cloud={cloud} />}
+        </Suspense>
       </main>
     </div>
   )

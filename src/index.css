@@ -241,6 +241,8 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 .warn { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
 .error { background: var(--danger-soft); color: var(--danger); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
 .banner { margin: 12px 28px 0; }
+.update.banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border-radius: 12px; background: var(--accent-soft, rgba(47,111,235,.1)); }
+.page-loading { min-height: 50vh; }
 .shift-options { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* Cards / shifts page */
@@ -444,3 +446,23 @@ kbd { font-family: inherit; font-size: 12px; border: 1px solid var(--line); bord
 .salary-table .is-deduction td, .salary-table .is-deduction th { color: var(--muted); }
 .salary-table .net th, .salary-table .net td { font-size: 16px; border-top: 2px solid var(--line); }
 .shift-cell.is-error { outline: 2px solid #c62828; outline-offset: -2px; }
+
+/* Acabamento: entrada suave dos ecrãs e dos cartões, toque com resposta. */
+@keyframes gh-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.page { animation: gh-in 0.22s ease-out both; }
+.page .card { animation: gh-in 0.28s ease-out both; }
+.page .card:nth-child(2) { animation-delay: 0.03s; }
+.page .card:nth-child(3) { animation-delay: 0.06s; }
+.page .card:nth-child(n + 4) { animation-delay: 0.09s; }
+.btn:active, .nav-item:active, .icon-btn:active { transform: scale(0.97); }
+.card { transition: box-shadow 0.2s, border-color 0.2s; }
+@media (max-width: 860px) {
+  .btn, .icon-btn, .nav-item { min-height: 44px; }
+  .report-table th, .report-table td { padding-left: 6px; padding-right: 6px; }
+  .pay-table th[scope='row'] { font-size: 14px; }
+  .sidebar { padding-bottom: max(6px, env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page, .page .card { animation: none; }
+  .btn:active, .nav-item:active, .icon-btn:active { transform: none; }
+}

@@ -58,7 +58,7 @@ describe('app', () => {
     render(<App store={store} />)
     await user.click(within(await screen.findByRole('navigation')).getByRole('button', { name: 'Turnos' }))
     const line = ['D', 'MT2', 'N', ...Array(28).fill('D')].join(' ') // 1 + 30 dias de novembro
-    await user.type(screen.getByLabelText('Linha do horário'), line)
+    await user.type(await screen.findByLabelText('Linha do horário'), line)
     await user.click(screen.getByRole('button', { name: 'Pré-visualizar' }))
     expect(store.data.shiftDays).toHaveLength(0) // ainda não gravou
     await user.click(screen.getByRole('button', { name: 'Gravar 30 dias' }))
@@ -124,7 +124,7 @@ describe('app', () => {
     const user = userEvent.setup()
     render(<App store={store} />)
     await user.click(within(await screen.findByRole('navigation')).getByRole('button', { name: /^Tarefas/ }))
-    await user.type(screen.getByLabelText('Nova tarefa'), 'Entregar escala hoje 18h !')
+    await user.type(await screen.findByLabelText('Nova tarefa'), 'Entregar escala hoje 18h !')
     expect(screen.getByText(/prioridade alta/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Adicionar' }))
     await waitFor(() => expect(store.data.tasks).toHaveLength(1))
@@ -142,7 +142,7 @@ describe('app', () => {
     expect(await screen.findByRole('heading', { name: 'Bom dia' })).toBeInTheDocument()
     expect(screen.getByText('A decorrer, termina às 22:30')).toBeInTheDocument()
     await user.click(within(screen.getByRole('navigation')).getByRole('button', { name: 'Relatórios' }))
-    expect(screen.getByRole('heading', { name: /Relatório · Novembro 2026/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Relatório · Novembro 2026/ })).toBeInTheDocument()
     expect(screen.getAllByText('14h').length).toBeGreaterThan(0)
   })
 })
