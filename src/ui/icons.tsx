@@ -28,3 +28,15 @@ export const IconTasks = () => (
     <path d="m8.5 12 2.5 2.5 4.5-5" />
   </svg>
 )
+
+export const IconHome = () => (
+  <svg {...base}>
+    <path d="M4 11.5 12 5l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-5h-6v5H5.5A1.5 1.5 0 0 1 4 19z" />
+  </svg>
+)
+
+export const IconReport = () => (
+  <svg {...base}>
+    <path d="M5 20V10M12 20V4M19 20v-7" />
+  </svg>
+)

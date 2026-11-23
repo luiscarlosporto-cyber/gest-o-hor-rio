@@ -6,11 +6,13 @@ import { useCloud } from './state/useCloud'
 import { CalendarPage, type View } from './ui/CalendarPage'
 import { SettingsPage, type Theme } from './ui/SettingsPage'
 import { ShiftsPage } from './ui/ShiftsPage'
-import { IconCalendar, IconSettings, IconShifts, IconTasks } from './ui/icons'
+import { IconCalendar, IconHome, IconReport, IconSettings, IconShifts, IconTasks } from './ui/icons'
+import { HomePage } from './ui/HomePage'
+import { ReportsPage } from './ui/ReportsPage'
 import { TasksPage } from './ui/TasksPage'
 import { pendingCount } from './domain/tasks'
 
-type Page = 'calendar' | 'tasks' | 'shifts' | 'settings'
+type Page = 'home' | 'calendar' | 'tasks' | 'shifts' | 'reports' | 'settings'
 
 const readPref = <T extends string>(key: string, fallback: T): T => {
   try {
@@ -27,7 +29,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
   cloud.onSynced.current = reload
   const googleLinked = Boolean(cloud.google)
   const { syncNow } = cloud
-  const [page, setPage] = useState<Page>('calendar')
+  const [page, setPage] = useState<Page>('home')
   const [view, setView] = useState<View>(() => readPref<View>('gh:view', 'week'))
   const [cursor, setCursor] = useState(() => new Date())
   const [theme, setTheme] = useState<Theme>(() => readPref<Theme>('gh:theme', 'system'))
@@ -102,9 +104,11 @@ export default function App({ store: injected }: { store?: DataStore }) {
           </span>
           <span>Gestão Horário</span>
         </div>
+        <NavItem icon={<IconHome />} label="Início" active={page === 'home'} onClick={() => setPage('home')} />
         <NavItem icon={<IconCalendar />} label="Calendário" active={page === 'calendar'} onClick={() => setPage('calendar')} />
         <NavItem icon={<IconTasks />} label="Tarefas" badge={pendingCount(data.tasks, new Date())} active={page === 'tasks'} onClick={() => setPage('tasks')} />
         <NavItem icon={<IconShifts />} label="Turnos" active={page === 'shifts'} onClick={() => setPage('shifts')} />
+        <NavItem icon={<IconReport />} label="Relatórios" active={page === 'reports'} onClick={() => setPage('reports')} />
         <NavItem icon={<IconSettings />} label="Definições" active={page === 'settings'} onClick={() => setPage('settings')} />
         <div className="sidebar-foot small">
           {supabase && !cloud.session && (
@@ -136,6 +140,17 @@ export default function App({ store: injected }: { store?: DataStore }) {
             {error ?? signInError}
           </div>
         )}
+        {page === 'home' && (
+          <HomePage
+            data={data}
+            update={update}
+            go={(p, date) => {
+              if (date) setCursor(date)
+              setPage(p)
+            }}
+          />
+        )}
+        {page === 'reports' && <ReportsPage data={data} cursor={cursor} setCursor={setCursor} />}
         {page === 'calendar' && <CalendarPage data={data} update={update} cursor={cursor} setCursor={setCursor} view={view} setView={setView} />}
         {page === 'tasks' && <TasksPage data={data} update={update} cloud={cloud} />}
         {page === 'shifts' && <ShiftsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
