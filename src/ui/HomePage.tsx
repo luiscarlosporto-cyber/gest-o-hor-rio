@@ -1,12 +1,15 @@
-import { useMemo } from 'react'
-import { formatLongDate, formatRange, parseLocal, timeOf, toDateKey, weekdayShort } from '../domain/dates'
+import { useEffect, useMemo, useState } from 'react'
+import { formatLongDate, parseLocal, timeOf, toDateKey, weekdayShort } from '../domain/dates'
 import { fmtHours, todayOverview } from '../domain/reports'
+import { countdown, dayPart, FAMILY_LABEL, shiftFamily, type DayPart, type ShiftFamily } from '../domain/shiftFamily'
+import { findType, summarizeMonth } from '../domain/shifts'
 import { toggleTask } from '../domain/tasks'
 import type { AppData, Occurrence } from '../domain/types'
 
 interface Props {
   data: AppData
   update: (fn: (d: AppData) => AppData) => void
+  /** Só para testes; sem ele a página atualiza-se sozinha a cada 30 s (contagem decrescente). */
   now?: Date
   go: (page: 'calendar' | 'tasks' | 'shifts' | 'reports', date?: Date) => void
 }
@@ -18,10 +21,44 @@ const relDay = (d: Date, now: Date) => {
   return diff === 0 ? 'hoje' : diff === 1 ? 'amanhã' : `${weekdayShort(d).toLowerCase()}, ${d.getDate()}`
 }
 
-export function HomePage({ data, update, now = new Date(), go }: Props) {
-  const o = useMemo(() => todayOverview(data, now), [data, now])
-  const shiftLine = (s: Occurrence) => `${s.title} · ${formatRange(s.start, s.end, s.allDay)}`
+const PARTS: { key: DayPart; label: string }[] = [
+  { key: 'morning', label: 'Manhã' },
+  { key: 'afternoon', label: 'Tarde' },
+  { key: 'night', label: 'Noite' },
+]
+
+function useNow(fixed?: Date) {
+  const [now, setNow] = useState(() => fixed ?? new Date())
+  useEffect(() => {
+    if (fixed) return
+    const t = window.setInterval(() => setNow(new Date()), 30_000)
+    return () => window.clearInterval(t)
+  }, [fixed])
+  return fixed ?? now
+}
+
+export function HomePage({ data, update, now: fixedNow, go }: Props) {
+  const now = useNow(fixedNow)
+  const minuteKey = Math.floor(now.getTime() / 60_000)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const o = useMemo(() => todayOverview(data, now), [data, minuteKey])
   const pending = [...o.overdue, ...o.tasksDue]
+
+  const shiftInfo = (s: Occurrence | undefined) => {
+    if (!s?.shiftDate) return undefined
+    const day = data.shiftDays.find((d) => d.date === s.shiftDate)
+    const type = day ? findType(data.shiftTypes, day.code) : undefined
+    return { code: day?.code ?? s.title, family: shiftFamily(type), label: type?.label, extra: Boolean(day?.extra) }
+  }
+  const famOfCode = (code: string): ShiftFamily => shiftFamily(findType(data.shiftTypes, code))
+
+  const hero = o.currentShift ?? o.nextShift
+  const heroInfo = shiftInfo(hero)
+  const month = useMemo(() => summarizeMonth(data.shiftDays, data.shiftTypes, now.getFullYear(), now.getMonth()), [data, now.getFullYear(), now.getMonth()]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const allDay = o.agenda.filter((a) => a.allDay)
+  const timed = o.agenda.filter((a) => !a.allDay)
+  const today = parseLocal(toDateKey(now))
 
   return (
     <div className="page page-home">
@@ -33,22 +70,28 @@ export function HomePage({ data, update, now = new Date(), go }: Props) {
       </header>
 
       <div className="home-grid">
-        <section className="card home-now" aria-labelledby="h-now">
-          <h2 id="h-now">Turno</h2>
-          {o.currentShift ? (
+        <section className={`card home-hero fam-${heroInfo?.family ?? 'other'}`} aria-labelledby="h-now">
+          <h2 id="h-now" className="home-eyebrow">
+            {o.currentShift ? 'Turno a decorrer' : 'Próximo turno'}
+          </h2>
+          {hero && heroInfo ? (
             <>
-              <p className="home-big">{o.currentShift.title}</p>
-              <p className="muted">A decorrer, termina às {timeOf(o.currentShift.end)}</p>
-            </>
-          ) : o.nextShift ? (
-            <>
-              <p className="home-big">{o.nextShift.title}</p>
-              <p className="muted">
-                Próximo: {relDay(o.nextShift.start, now)} às {timeOf(o.nextShift.start)}
+              <div className="home-hero-main">
+                <span className="home-hero-code">{heroInfo.code}</span>
+                <span className="home-hero-label">
+                  {heroInfo.label ?? FAMILY_LABEL[heroInfo.family]}
+                  {heroInfo.extra && <span className="pill pill-extra">Extra</span>}
+                </span>
+              </div>
+              <p className="home-hero-when">
+                {relDay(hero.start, now)}, {timeOf(hero.start)} – {timeOf(hero.end)}
+              </p>
+              <p className="home-countdown" aria-live="polite">
+                {o.currentShift ? `Termina daqui a ${countdown(now, hero.end)}` : `Começa daqui a ${countdown(now, hero.start)}`}
               </p>
             </>
           ) : (
-            <p className="muted">Sem turnos marcados nas próximas duas semanas.</p>
+            <p className="home-hero-empty">Sem turnos marcados nas próximas duas semanas.</p>
           )}
           <dl className="home-facts">
             {o.restMinutes !== undefined && (
@@ -66,34 +109,7 @@ export function HomePage({ data, update, now = new Date(), go }: Props) {
           </dl>
         </section>
 
-        <section className="card" aria-labelledby="h-agenda">
-          <div className="card-head">
-            <h2 id="h-agenda">Hoje</h2>
-            {o.conflicts > 0 && <span className="conflict-pill">{o.conflicts === 1 ? '1 sobreposição' : `${o.conflicts} sobreposições`}</span>}
-          </div>
-          {o.agenda.length === 0 ? (
-            <p className="muted">Dia livre.</p>
-          ) : (
-            <ul className="home-agenda">
-              {o.agenda.map((a) => (
-                <li key={a.key}>
-                  <span className="home-agenda-time">{a.allDay ? 'Dia' : timeOf(a.start)}</span>
-                  <span
-                    className={`chip${a.source === 'shift' ? ' chip-shift' : ` cat-${a.category}`}`}
-                    style={a.color ? { ['--chip' as string]: a.color } : undefined}
-                  >
-                    {a.source === 'shift' ? shiftLine(a) : a.title}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <button className="btn btn-sm home-link" onClick={() => go('calendar', now)}>
-            Abrir o calendário
-          </button>
-        </section>
-
-        <section className="card" aria-labelledby="h-tasks">
+        <section className="card home-tasks-card" aria-labelledby="h-tasks">
           <div className="card-head">
             <h2 id="h-tasks">Tarefas</h2>
             {o.overdue.length > 0 && <span className="conflict-pill">{o.overdue.length} em atraso</span>}
@@ -117,6 +133,73 @@ export function HomePage({ data, update, now = new Date(), go }: Props) {
             Ver todas
           </button>
         </section>
+
+        <section className="card home-day-card" aria-labelledby="h-agenda">
+          <div className="card-head">
+            <h2 id="h-agenda">O teu dia</h2>
+            {o.conflicts > 0 && <span className="conflict-pill">{o.conflicts === 1 ? '1 sobreposição' : `${o.conflicts} sobreposições`}</span>}
+          </div>
+          {allDay.length > 0 && (
+            <ul className="home-allday">
+              {allDay.map((a) => (
+                <li key={a.key} className={`home-item${a.source === 'shift' ? ` fam-${shiftInfo(a)?.family}` : ` cat-${a.category}`}`}>
+                  {a.source === 'shift' ? `${a.title} · dia inteiro` : a.title}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="home-parts">
+            {PARTS.map((p) => {
+              // Uma noite que começou ontem aparece na manhã de hoje (é quando acaba).
+              const items = timed.filter((a) => dayPart(a.start < today ? today : a.start) === p.key)
+              return (
+                <div key={p.key} className={`home-part part-${p.key}`}>
+                  <h3>{p.label}</h3>
+                  {items.length === 0 ? (
+                    <p className="muted small">Livre</p>
+                  ) : (
+                    <ul>
+                      {items.map((a) => (
+                        <li key={a.key} className={`home-item${a.source === 'shift' ? ` fam-${shiftInfo(a)?.family}` : ` cat-${a.category}`}`}>
+                          <span className="home-item-time">{timeOf(a.start)}</span>
+                          <span className="home-item-title">{a.source === 'shift' ? `Turno ${a.title}` : a.title}</span>
+                          {a.location && <span className="muted small">{a.location}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+          <button className="btn btn-sm home-link" onClick={() => go('calendar', now)}>
+            Abrir o calendário
+          </button>
+        </section>
+
+        <section className="card home-month" aria-labelledby="h-month">
+          <h2 id="h-month">Este mês</h2>
+          {month.workDays === 0 ? (
+            <p className="muted">Ainda sem turnos neste mês.</p>
+          ) : (
+            <>
+              <p className="home-month-big">
+                <strong>{month.workDays}</strong> turnos · <strong>{fmtHours(month.workedMinutes)}</strong>
+              </p>
+              <ul className="home-month-counts">
+                {month.counts.slice(0, 6).map((c) => (
+                  <li key={c.code} className={`fam-${famOfCode(c.code)}`}>
+                    <span className="dot" aria-hidden />
+                    {c.code} <span className="muted">×{c.days}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <button className="btn btn-sm home-link" onClick={() => go('reports')}>
+            Relatórios e vencimento
+          </button>
+        </section>
       </div>
 
       <section className="card" aria-labelledby="h-week">
@@ -124,19 +207,18 @@ export function HomePage({ data, update, now = new Date(), go }: Props) {
         <ol className="home-week">
           {o.week.map((d) => {
             const date = parseLocal(d.date)
+            const extra = data.shiftDays.find((s) => s.date === d.date)?.extra
             return (
               <li key={d.date}>
-                <button className="home-day" onClick={() => go('calendar', date)} aria-label={`${formatLongDate(date)}: ${d.shift?.code ?? 'sem turno'}, ${d.events} eventos`}>
+                <button className="home-day" onClick={() => go('calendar', date)} aria-label={`${formatLongDate(date)}: ${d.shift?.code ?? 'sem turno'}${extra ? ' (extra)' : ''}, ${d.events} eventos`}>
                   <span className="home-day-dow">{d.date === toDateKey(now) ? 'Hoje' : weekdayShort(date)}</span>
                   <span className="home-day-dom">{date.getDate()}</span>
                   {d.shift ? (
-                    <span className="chip chip-shift" style={d.shift.color ? { ['--chip' as string]: d.shift.color } : undefined}>
-                      {d.shift.code}
-                    </span>
+                    <span className={`shift-pill fam-${famOfCode(d.shift.code)}${extra ? ' is-extra' : ''}`}>{d.shift.code}</span>
                   ) : (
                     <span className="chip home-day-empty">–</span>
                   )}
-                  <span className="small muted">{d.events ? `${d.events} ev.` : ' '}</span>
+                  <span className="small muted">{d.events ? `${d.events} ev.` : ' '}</span>
                 </button>
               </li>
             )
