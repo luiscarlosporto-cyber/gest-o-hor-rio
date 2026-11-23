@@ -484,3 +484,31 @@ kbd { font-family: inherit; font-size: 12px; border: 1px solid var(--line); bord
   .global-search-btn span, .global-search-btn kbd { display: none; }
   .toolbar { padding-right: 52px; }
 }
+
+/* Assistente */
+.page-assistant { display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+.chat { display: flex; flex-direction: column; gap: 10px; }
+.chat-empty { display: flex; flex-direction: column; gap: 10px; }
+.ex-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ex-chip { border: 1px solid var(--line); background: var(--raised); color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 13px; text-align: left; }
+.ex-chip:hover { border-color: var(--accent); }
+.bubble { border-radius: 14px; padding: 10px 14px; max-width: 92%; display: flex; flex-direction: column; gap: 8px; animation: gh-in 0.18s ease-out; }
+.bubble p { margin: 0; white-space: pre-wrap; line-height: 1.45; }
+.bubble-user { align-self: flex-end; background: var(--accent); color: #fff; }
+.bubble-assistant { align-self: flex-start; background: var(--raised); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.bubble.is-thinking { color: var(--muted); }
+.proposal { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; background: var(--bg, transparent); }
+.proposal.is-accepted { border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.proposal.is-dismissed { opacity: 0.6; }
+.proposal-kind { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 600; }
+.proposal .row-actions { margin-top: 4px; }
+.chat-input { display: flex; gap: 8px; align-items: flex-end; position: sticky; bottom: 0; }
+.chat-input textarea { flex: 1; resize: none; font: inherit; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--raised); color: var(--text); min-height: 44px; }
+@media (max-width: 860px) {
+  .sidebar .nav-item { flex: 1 1 0; padding-inline: 2px; }
+  .nav-label { overflow: hidden; text-overflow: ellipsis; max-width: 100%; white-space: nowrap; }
+  .nav-long { display: none; }
+}
+
+.nav-short { display: none; }
+@media (max-width: 860px) { .nav-short { display: inline; } }

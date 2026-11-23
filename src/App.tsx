@@ -5,7 +5,7 @@ import { useAppData } from './state/useAppData'
 import { useCloud } from './state/useCloud'
 import type { View } from './ui/CalendarPage'
 import type { Theme } from './ui/SettingsPage'
-import { IconCalendar, IconHome, IconReport, IconSearch, IconSettings, IconShifts, IconTasks } from './ui/icons'
+import { IconAssistant, IconCalendar, IconHome, IconReport, IconSearch, IconSettings, IconShifts, IconTasks } from './ui/icons'
 import { GlobalSearch } from './ui/GlobalSearch'
 import { HomePage } from './ui/HomePage'
 import { pendingCount } from './domain/tasks'
@@ -18,9 +18,10 @@ const CalendarPage = lazy(() => import('./ui/CalendarPage').then((m) => ({ defau
 const SettingsPage = lazy(() => import('./ui/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const ShiftsPage = lazy(() => import('./ui/ShiftsPage').then((m) => ({ default: m.ShiftsPage })))
 const ReportsPage = lazy(() => import('./ui/ReportsPage').then((m) => ({ default: m.ReportsPage })))
+const AssistantPage = lazy(() => import('./ui/AssistantPage').then((m) => ({ default: m.AssistantPage })))
 const TasksPage = lazy(() => import('./ui/TasksPage').then((m) => ({ default: m.TasksPage })))
 
-type Page = 'home' | 'calendar' | 'tasks' | 'shifts' | 'reports' | 'settings'
+type Page = 'home' | 'calendar' | 'tasks' | 'assistant' | 'shifts' | 'reports' | 'settings'
 
 const readPref = <T extends string>(key: string, fallback: T): T => {
   try {
@@ -137,6 +138,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
         if (d) setCursor(d)
         setPage('shifts')
       } else if (where === 'tarefas') setPage('tasks')
+      else if (where === 'assistente') setPage('assistant')
       else return // outros (ex.: resposta do login) não são nossos
       history.replaceState(null, '', window.location.pathname + window.location.search)
     }
@@ -162,11 +164,12 @@ export default function App({ store: injected }: { store?: DataStore }) {
           <kbd>Ctrl K</kbd>
         </button>
         <NavItem icon={<IconHome />} label="Início" active={page === 'home'} onClick={() => setPage('home')} />
-        <NavItem icon={<IconCalendar />} label="Calendário" active={page === 'calendar'} onClick={() => setPage('calendar')} />
+        <NavItem icon={<IconCalendar />} label="Calendário" short="Agenda" active={page === 'calendar'} onClick={() => setPage('calendar')} />
         <NavItem icon={<IconTasks />} label="Tarefas" badge={pendingCount(data.tasks, new Date())} active={page === 'tasks'} onClick={() => setPage('tasks')} />
+        <NavItem icon={<IconAssistant />} label="Assistente" short="IA" active={page === 'assistant'} onClick={() => setPage('assistant')} />
         <NavItem icon={<IconShifts />} label="Turnos" active={page === 'shifts'} onClick={() => setPage('shifts')} />
-        <NavItem icon={<IconReport />} label="Relatórios" active={page === 'reports'} onClick={() => setPage('reports')} />
-        <NavItem icon={<IconSettings />} label="Definições" active={page === 'settings'} onClick={() => setPage('settings')} />
+        <NavItem icon={<IconReport />} label="Relatórios" short="Resumo" active={page === 'reports'} onClick={() => setPage('reports')} />
+        <NavItem icon={<IconSettings />} label="Definições" short="Ajustes" active={page === 'settings'} onClick={() => setPage('settings')} />
         <div className="sidebar-foot small">
           {supabase && !cloud.session && (
             <button className="btn btn-google" onClick={() => signInWithGoogle().catch((e) => setSignInError(String(e)))}>
@@ -219,6 +222,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
         {page === 'reports' && <ReportsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
         {page === 'calendar' && <CalendarPage data={data} update={update} cursor={cursor} setCursor={setCursor} view={view} setView={setView} />}
         {page === 'tasks' && <TasksPage data={data} update={update} cloud={cloud} />}
+        {page === 'assistant' && <AssistantPage data={data} update={update} signedIn={store.kind === 'supabase' && Boolean(cloud.session)} />}
         {page === 'shifts' && <ShiftsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
         {page === 'settings' && <SettingsPage data={data} store={store} theme={theme} setTheme={setTheme} update={update} cloud={cloud} />}
         </Suspense>
@@ -243,13 +247,22 @@ export default function App({ store: injected }: { store?: DataStore }) {
   )
 }
 
-function NavItem({ icon, label, active, onClick, badge }: { icon: ReactNode; label: string; active: boolean; onClick: () => void; badge?: number }) {
+function NavItem({ icon, label, short, active, onClick, badge }: { icon: ReactNode; label: string; short?: string; active: boolean; onClick: () => void; badge?: number }) {
   return (
     <button className={`nav-item${active ? ' is-active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}>
       <span className="nav-icon" aria-hidden>
         {icon}
       </span>
-      <span className="nav-label">{label}</span>
+      {short ? (
+        <span className="nav-label" aria-label={label}>
+          <span className="nav-long">{label}</span>
+          <span className="nav-short" aria-hidden>
+            {short}
+          </span>
+        </span>
+      ) : (
+        <span className="nav-label">{label}</span>
+      )}
       {badge ? (
         <span className="nav-badge" aria-label={`${badge} para hoje ou atrasadas`}>
           {badge}
