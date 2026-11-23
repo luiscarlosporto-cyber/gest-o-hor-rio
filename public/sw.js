@@ -74,3 +74,39 @@ self.addEventListener('fetch', (event) => {
     }),
   )
 })
+
+// Notificações (lembretes enviados pelo servidor).
+self.addEventListener('push', (event) => {
+  let p = { title: 'Gestão Horário', body: '', url: '', tag: undefined }
+  try {
+    p = { ...p, ...event.data.json() }
+  } catch {
+    if (event.data) p.body = event.data.text()
+  }
+  event.waitUntil(
+    self.registration.showNotification(p.title, {
+      body: p.body,
+      tag: p.tag,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      lang: 'pt-PT',
+      data: { url: p.url || '' },
+    }),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const target = new URL(`./#${event.notification.data?.url || ''}`, self.registration.scope).href
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if ('focus' in c) {
+          c.navigate(target).catch(() => {})
+          return c.focus()
+        }
+      }
+      return self.clients.openWindow(target)
+    }),
+  )
+})

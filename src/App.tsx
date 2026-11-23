@@ -10,6 +10,8 @@ import { GlobalSearch } from './ui/GlobalSearch'
 import { HomePage } from './ui/HomePage'
 import { pendingCount } from './domain/tasks'
 import { onUpdateReady } from './pwa'
+import { uploadReminders } from './data/push'
+import { parseLocal } from './domain/dates'
 
 // Cada ecrã é carregado só quando é aberto (o Início vem logo no arranque).
 const CalendarPage = lazy(() => import('./ui/CalendarPage').then((m) => ({ default: m.CalendarPage })))
@@ -107,6 +109,41 @@ export default function App({ store: injected }: { store?: DataStore }) {
     return () => window.clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data])
+
+  // Lembretes: envia ao servidor os avisos dos próximos 14 dias, ao abrir e depois de cada alteração.
+  const reminderSig = useRef('')
+  useEffect(() => {
+    if (store.kind !== 'supabase' || !loaded || !data.reminders) return
+    const t = window.setTimeout(() => {
+      uploadReminders(data, data.reminders)
+        .then(() => (reminderSig.current = 'ok'))
+        .catch(() => (reminderSig.current = 'erro'))
+    }, reminderSig.current ? 5000 : 500)
+    return () => window.clearTimeout(t)
+  }, [store, loaded, data])
+
+  // Abrir a partir de uma notificação: #dia/AAAA-MM-DD, #turnos/AAAA-MM-DD, #tarefas.
+  useEffect(() => {
+    const go = () => {
+      const h = decodeURIComponent(window.location.hash.slice(1))
+      if (!h) return
+      const [where, date] = h.split('/')
+      const d = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? parseLocal(date) : null
+      if (where === 'dia' && d) {
+        setCursor(d)
+        setView('day')
+        setPage('calendar')
+      } else if (where === 'turnos') {
+        if (d) setCursor(d)
+        setPage('shifts')
+      } else if (where === 'tarefas') setPage('tasks')
+      else return // outros (ex.: resposta do login) não são nossos
+      history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+    go()
+    window.addEventListener('hashchange', go)
+    return () => window.removeEventListener('hashchange', go)
+  }, [])
 
   if (!cloud.ready || !loaded) return <div className="splash">A carregar…</div>
 

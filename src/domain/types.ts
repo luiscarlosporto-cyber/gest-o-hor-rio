@@ -1,5 +1,6 @@
 import type { Payslip } from './payslip'
 import type { Task } from './tasks'
+import type { ReminderSettings } from './reminders'
 
 /**
  * Tipos do domínio. As datas/horas são guardadas como "hora local flutuante"
@@ -123,4 +124,6 @@ export interface AppData {
   pay?: PaySettings
   /** Talões de vencimento carregados (só rubricas e valores). */
   payslips?: Payslip[]
+  /** Lembretes e notificações no telemóvel. */
+  reminders?: ReminderSettings
 }

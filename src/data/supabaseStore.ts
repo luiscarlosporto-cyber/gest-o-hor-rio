@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { DEFAULT_SHIFT_TYPES } from '../domain/shifts'
 import type { Task } from '../domain/tasks'
 import type { Payslip } from '../domain/payslip'
+import type { ReminderSettings } from '../domain/reminders'
 import type { AppData, CalendarEvent, PaySettings, ShiftDay, ShiftType } from '../domain/types'
 import type { DataStore } from './store'
 
@@ -153,7 +154,7 @@ export class SupabaseStore implements DataStore {
       this.db.from('shift_days').select('day, code, extra').is('deleted_at', null),
       this.db.from('shift_types').select('*').order('sort_order'),
       this.db.from('tasks').select('*'),
-      this.db.from('profiles').select('pay_settings').eq('id', this.userId).maybeSingle(),
+      this.db.from('profiles').select('pay_settings, reminder_settings').eq('id', this.userId).maybeSingle(),
       this.db.from('payslips').select('year, month, data').order('year').order('month'),
     ])
     for (const r of [ev, sd, st, tk, pr, ps]) if (r.error) throw new Error(r.error.message)
@@ -173,6 +174,7 @@ export class SupabaseStore implements DataStore {
       shiftTypes: types.length ? types : DEFAULT_SHIFT_TYPES,
       tasks: ((tk.data ?? []) as TaskRow[]).map(rowToTask),
       pay: (pr.data as { pay_settings?: PaySettings | null } | null)?.pay_settings ?? undefined,
+      reminders: (pr.data as { reminder_settings?: ReminderSettings | null } | null)?.reminder_settings ?? undefined,
       payslips: ((ps.data ?? []) as { year: number; month: number; data: Payslip }[]).map((r) => ({ ...r.data, year: r.year, month: r.month })),
     }
     this.last = data
@@ -234,6 +236,11 @@ export class SupabaseStore implements DataStore {
     // Dados de vencimento (perfil)
     if (JSON.stringify(prev.pay) !== JSON.stringify(next.pay)) {
       await check(this.db.from('profiles').update({ pay_settings: next.pay ?? null }).eq('id', uid))
+    }
+
+    // Lembretes (perfil)
+    if (JSON.stringify(prev.reminders) !== JSON.stringify(next.reminders)) {
+      await check(this.db.from('profiles').update({ reminder_settings: next.reminders ?? null }).eq('id', uid))
     }
 
     // Tipos de turno (não vão para o Google)

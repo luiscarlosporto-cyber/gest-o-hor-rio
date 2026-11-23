@@ -4,6 +4,7 @@ import { signInWithGoogle, supabase } from '../data/supabase'
 import { CATEGORIES_ENF, defaultPaySettings, hourlyRate, monthlyBase, positionsFor, TRU_2026 } from '../domain/payroll'
 import type { AppData, PaySettings } from '../domain/types'
 import type { useCloud } from '../state/useCloud'
+import { RemindersCard } from './RemindersCard'
 
 export type Theme = 'system' | 'light' | 'dark'
 
@@ -45,6 +46,7 @@ export function SettingsPage({ data, store, theme, setTheme, update, cloud }: Pr
         <h1 className="toolbar-title">Definições</h1>
       </header>
       {supabase && cloud && <GoogleCard cloud={cloud} />}
+      <RemindersCard data={data} update={update} />
       <PayCard pay={data.pay} onChange={(pay) => update((d) => ({ ...d, pay }))} />
       <section className="card">
         <h2>Aspeto</h2>
