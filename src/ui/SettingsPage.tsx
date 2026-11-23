@@ -4,6 +4,7 @@ import { signInWithGoogle, supabase } from '../data/supabase'
 import { CATEGORIES_ENF, defaultPaySettings, hourlyRate, monthlyBase, positionsFor, TRU_2026 } from '../domain/payroll'
 import type { AppData, PaySettings } from '../domain/types'
 import type { useCloud } from '../state/useCloud'
+import { PrivacyCard } from './PrivacyCard'
 import { RemindersCard } from './RemindersCard'
 
 export type Theme = 'system' | 'light' | 'dark'
@@ -79,6 +80,7 @@ export function SettingsPage({ data, store, theme, setTheme, update, cloud }: Pr
         </div>
         {msg && <p className="muted">{msg}</p>}
       </section>
+      {store.kind === 'supabase' && cloud?.session && <PrivacyCard data={data} update={update} />}
       <section className="card">
         <h2>Atalhos de teclado</h2>
         <ul className="shortcuts">

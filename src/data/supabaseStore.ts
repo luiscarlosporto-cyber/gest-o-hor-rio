@@ -130,6 +130,44 @@ export function eventToRow(e: CalendarEvent, userId: string): EventRow {
 const eventKey = (e: CalendarEvent) =>
   JSON.stringify([e.title, e.start, e.end, e.allDay, e.category, e.location, e.notes, e.rrule, e.exdates, e.recurringEventId, e.originalDate, e.transparent])
 
+type ShiftDayRow = { day: string; code: string; extra?: boolean }
+type ProfileRow = { pay_settings?: PaySettings | null; reminder_settings?: ReminderSettings | null }
+type PayslipRow = { year: number; month: number; data: Payslip }
+
+/** Linhas das tabelas (como vêm do Supabase ou de uma cópia de segurança diária) → dados da app. */
+export interface DataRows {
+  events: EventRow[]
+  shift_days: ShiftDayRow[]
+  shift_types: ShiftTypeRow[]
+  tasks: TaskRow[]
+  profile: ProfileRow | null
+  payslips: PayslipRow[]
+}
+
+export function rowsToAppData(r: DataRows): AppData {
+  const types = [...(r.shift_types ?? [])]
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map<ShiftType>((t) => ({
+      code: t.code,
+      label: t.label,
+      start: hm(t.start_time),
+      end: hm(t.end_time),
+      color: t.color,
+      work: t.is_work,
+      ...(t.paid_hours ? { paidHours: Number(t.paid_hours) } : {}),
+    }))
+  return {
+    version: 1,
+    events: (r.events ?? []).filter((e) => !e.deleted_at).map(rowToEvent),
+    shiftDays: (r.shift_days ?? []).map<ShiftDay>((d) => (d.extra ? { date: d.day, code: d.code, extra: true } : { date: d.day, code: d.code })),
+    shiftTypes: types.length ? types : DEFAULT_SHIFT_TYPES,
+    tasks: (r.tasks ?? []).map(rowToTask),
+    pay: r.profile?.pay_settings ?? undefined,
+    reminders: r.profile?.reminder_settings ?? undefined,
+    payslips: (r.payslips ?? []).map((p) => ({ ...p.data, year: p.year, month: p.month })),
+  }
+}
+
 /**
  * Guarda no Supabase. Compara com o último estado conhecido e só envia o que mudou,
  * marcado como "dirty" para a sincronização com o Google. Apagar é um "soft delete"
@@ -158,25 +196,14 @@ export class SupabaseStore implements DataStore {
       this.db.from('payslips').select('year, month, data').order('year').order('month'),
     ])
     for (const r of [ev, sd, st, tk, pr, ps]) if (r.error) throw new Error(r.error.message)
-    const types = (st.data as ShiftTypeRow[]).map<ShiftType>((t) => ({
-      code: t.code,
-      label: t.label,
-      start: hm(t.start_time),
-      end: hm(t.end_time),
-      color: t.color,
-      work: t.is_work,
-      ...(t.paid_hours ? { paidHours: Number(t.paid_hours) } : {}),
-    }))
-    const data: AppData = {
-      version: 1,
-      events: (ev.data as EventRow[]).map(rowToEvent),
-      shiftDays: (sd.data as { day: string; code: string; extra?: boolean }[]).map<ShiftDay>((r) => (r.extra ? { date: r.day, code: r.code, extra: true } : { date: r.day, code: r.code })),
-      shiftTypes: types.length ? types : DEFAULT_SHIFT_TYPES,
-      tasks: ((tk.data ?? []) as TaskRow[]).map(rowToTask),
-      pay: (pr.data as { pay_settings?: PaySettings | null } | null)?.pay_settings ?? undefined,
-      reminders: (pr.data as { reminder_settings?: ReminderSettings | null } | null)?.reminder_settings ?? undefined,
-      payslips: ((ps.data ?? []) as { year: number; month: number; data: Payslip }[]).map((r) => ({ ...r.data, year: r.year, month: r.month })),
-    }
+    const data = rowsToAppData({
+      events: ev.data as EventRow[],
+      shift_days: sd.data as ShiftDayRow[],
+      shift_types: st.data as ShiftTypeRow[],
+      tasks: (tk.data ?? []) as TaskRow[],
+      profile: pr.data as ProfileRow | null,
+      payslips: (ps.data ?? []) as PayslipRow[],
+    })
     this.last = data
     return data
   }

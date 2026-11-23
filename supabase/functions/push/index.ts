@@ -1,10 +1,12 @@
 // Envia as notificações dos lembretes (Web Push).
 // - "send_due": chamado pelo pg_cron de minuto a minuto, com o segredo x-cron-secret.
+// - "maintain": chamado pelo pg_cron de 6 em 6 horas; sincroniza cada conta Google e renova o canal de avisos.
 // - "test": o utilizador autenticado pede uma notificação de teste para os seus aparelhos.
 // As chaves VAPID e o segredo do cron estão no Vault do Supabase (read_push_config), nunca no código.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
 import { cors, json } from '../_shared/cors.ts'
+import { syncUser } from '../_shared/sync.ts'
 
 const APP_URL = 'https://luiscarlosporto-cyber.github.io/gest-o-hor-rio/'
 const admin = () => createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
@@ -89,6 +91,22 @@ async function sendDue(db: SupabaseClient) {
   return { due: data?.length ?? 0, sent }
 }
 
+/** Sincroniza todas as contas Google (renova o canal antes de expirar), mesmo sem a app aberta. */
+async function maintain(db: SupabaseClient) {
+  const { data } = await db.from('google_accounts').select('user_id')
+  let synced = 0
+  let failed = 0
+  for (const a of data ?? []) {
+    try {
+      const r = await syncUser(db, a.user_id)
+      if (r !== 'busy') synced++
+    } catch {
+      failed++ // o erro fica em google_accounts.last_error e aparece na app
+    }
+  }
+  return { accounts: data?.length ?? 0, synced, failed }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Método não suportado' }, 405)
@@ -102,7 +120,12 @@ Deno.serve(async (req) => {
   const given = req.headers.get('x-cron-secret')
   if (given) {
     if (given !== cronSecret) return json({ error: 'Não autorizado' }, 401)
+    const action = await req
+      .json()
+      .then((b: { action?: string }) => b.action)
+      .catch(() => undefined)
     try {
+      if (action === 'maintain') return json({ ok: true, ...(await maintain(db)) })
       return json({ ok: true, ...(await sendDue(db)) })
     } catch (e) {
       return json({ error: String(e) }, 500)

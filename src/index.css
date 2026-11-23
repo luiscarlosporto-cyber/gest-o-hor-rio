@@ -512,3 +512,14 @@ kbd { font-family: inherit; font-size: 12px; border: 1px solid var(--line); bord
 
 .nav-short { display: none; }
 @media (max-width: 860px) { .nav-short { display: inline; } }
+
+/* Os meus dados */
+.sub-h { font-size: 13px; font-weight: 600; margin: 16px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.audit-list { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow: auto; display: flex; flex-direction: column; }
+.audit-list li { display: grid; grid-template-columns: auto auto 1fr; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--line-soft, var(--line)); font-size: 13px; }
+.audit-when { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.audit-who { font-size: 11px; font-weight: 600; border-radius: 6px; padding: 1px 6px; background: var(--line-soft, var(--line)); }
+.audit-who.is-ai { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.danger-zone { border: 1px solid var(--danger); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.danger-zone input { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--raised); color: var(--text); font: inherit; min-height: 40px; }
+@media (max-width: 860px) { .audit-list li { grid-template-columns: auto 1fr; } .audit-list li > :last-child { grid-column: 1 / -1; } }
