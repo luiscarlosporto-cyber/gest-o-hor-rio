@@ -36,3 +36,20 @@ describe('parseScheduleList', () => {
     expect(r.title).toBe('Fisioterapia')
   })
 })
+
+describe('parseScheduleList: outros agendamentos', () => {
+  it('lê hora de fim, título e local de cada linha', () => {
+    const r = parseScheduleList('Consultas:\n12/11 15h Dentista @ Penafiel\n20/11 9h30-10h15 Fisioterapia\nOftalmologia 3/12 às 11h', new Date(2026, 10, 1))
+    expect(r.items.map((i) => [toLocal(i.start), i.end && toLocal(i.end), i.title, i.location])).toEqual([
+      ['2026-11-12T15:00', undefined, 'Dentista', 'Penafiel'],
+      ['2026-11-20T09:30', '2026-11-20T10:15', 'Fisioterapia', undefined],
+      ['2026-12-03T11:00', undefined, 'Oftalmologia', undefined],
+    ])
+    expect(r.title).toBe('Consulta')
+  })
+
+  it('a SMS do ginásio não ganha títulos por linha', () => {
+    const r = parseScheduleList(SMS, new Date(2026, 10, 1))
+    expect(r.items.every((i) => !i.title && !i.end)).toBe(true)
+  })
+})

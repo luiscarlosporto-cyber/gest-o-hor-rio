@@ -207,7 +207,7 @@ export function CalendarPage({ data, update, cursor, setCursor, view, setView }:
           Criar
         </button>
         <button className="btn" type="button" onClick={() => setPasting(true)}>
-          Colar lista
+          Colar horários
         </button>
       </form>
 

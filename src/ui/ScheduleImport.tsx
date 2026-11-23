@@ -11,16 +11,46 @@ interface Props {
   onClose: () => void
 }
 
-/** Colar uma lista de horários (SMS do ginásio, por exemplo) e criar todas as sessões de uma vez. */
+interface Prefs {
+  title: string
+  minutes: number
+  category: Category
+}
+
+/** Últimas escolhas por tipo de mensagem (Treino, Consulta…), só neste dispositivo. */
+const PREFS_KEY = 'ritmia:colar-horarios'
+function loadPrefs(): Record<string, Prefs> {
+  try {
+    return JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Record<string, Prefs>
+  } catch {
+    return {}
+  }
+}
+function savePrefs(kind: string, p: Prefs) {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({ ...loadPrefs(), [kind]: p }))
+  } catch {
+    /* sem armazenamento: não faz mal */
+  }
+}
+
+const DURATIONS = [30, 45, 60, 75, 90, 120]
+
+/**
+ * Colar uma lista de horários (ginásio, fisioterapia, explicações, consultas…)
+ * e criar todas as marcações de uma vez.
+ */
 export function ScheduleImport({ data, onSave, onClose }: Props) {
   const [text, setText] = useState('')
   const parsed = useMemo(() => parseScheduleList(text, new Date()), [text])
+  const remembered = useMemo(() => loadPrefs()[parsed.title], [parsed.title])
   const [title, setTitle] = useState<string | null>(null)
   const [category, setCategory] = useState<Category | null>(null)
-  const [minutes, setMinutes] = useState(60)
+  const [minutesPick, setMinutes] = useState<number | null>(null)
   const [off, setOff] = useState<Set<string>>(new Set())
-  const name = title ?? parsed.title
-  const cat = category ?? parsed.category
+  const name = title ?? remembered?.title ?? parsed.title
+  const cat = category ?? remembered?.category ?? parsed.category
+  const minutes = minutesPick ?? remembered?.minutes ?? 60
 
   const rows = useMemo(() => {
     if (!parsed.items.length) return []
@@ -29,35 +59,45 @@ export function ScheduleImport({ data, onSave, onClose }: Props) {
     const others = occurrencesIn(data, addDays(first, -1), addDays(last, 2))
     return parsed.items.map((it) => {
       const key = toLocal(it.start)
-      const end = addMinutes(it.start, minutes)
-      const duplicate = data.events.some((e) => e.start === key && e.title.trim().toLowerCase() === name.trim().toLowerCase())
+      const end = it.end ?? addMinutes(it.start, minutes)
+      const rowTitle = it.title ?? name
+      const duplicate = data.events.some((e) => e.start === key && e.title.trim().toLowerCase() === rowTitle.trim().toLowerCase())
       const clash = conflictsWith(
-        { key: `new-${key}`, source: 'event', title: name, start: it.start, end, allDay: false, category: cat, transparent: false, recurring: false },
+        { key: `new-${key}`, source: 'event', title: rowTitle, start: it.start, end, allDay: false, category: cat, transparent: false, recurring: false },
         others,
       )
-      return { key, start: it.start, end, duplicate, clash }
+      return { key, start: it.start, end, title: rowTitle, own: Boolean(it.title), location: it.location, duplicate, clash }
     })
   }, [parsed, data, minutes, name, cat])
 
   const chosen = rows.filter((r) => !r.duplicate && !off.has(r.key))
 
   const save = () => {
+    savePrefs(parsed.title, { title: name.trim() || parsed.title, minutes, category: cat })
     onSave(
-      chosen.map((r) => ({ title: name.trim() || 'Sessão', start: r.key, end: toLocal(r.end), allDay: false, category: cat })),
+      chosen.map((r) => ({
+        title: r.own ? r.title : name.trim() || 'Sessão',
+        start: r.key,
+        end: toLocal(r.end),
+        allDay: false,
+        category: cat,
+        ...(r.location ? { location: r.location } : {}),
+      })),
     )
   }
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal schedule-import" role="dialog" aria-modal="true" aria-label="Colar lista de horários">
+      <div className="modal schedule-import" role="dialog" aria-modal="true" aria-label="Colar horários">
         <div className="modal-head">
-          <h2>Colar lista de horários</h2>
+          <h2>Colar horários</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Fechar">
             ×
           </button>
         </div>
         <p className="muted small">
-          Copia a mensagem (por exemplo, a SMS do ginásio) e cola-a aqui. Nada é gravado até carregares em Adicionar.
+          Cola uma mensagem com datas e horas: ginásio, fisioterapia, explicações, consultas. Cada linha pode ter hora de fim, título e
+          local, por exemplo “12/11 15h-16h Dentista @ Penafiel”. Nada é gravado até carregares em Adicionar.
         </p>
         <textarea
           className="input"
@@ -67,7 +107,7 @@ export function ScheduleImport({ data, onSave, onClose }: Props) {
             setText(e.target.value)
             setOff(new Set())
           }}
-          placeholder={'Treinos de 11/2026:\n4/11 16h\n6/11 16h'}
+          placeholder={'Treinos de 11/2026:\n4/11 16h\n12/11 15h-16h Dentista @ Penafiel'}
           aria-label="Texto com os horários"
           autoFocus
         />
@@ -76,13 +116,13 @@ export function ScheduleImport({ data, onSave, onClose }: Props) {
           <>
             <div className="field-row">
               <label className="field">
-                <span>Título</span>
+                <span>Título{rows.some((r) => r.own) ? ' (linhas sem título)' : ''}</span>
                 <input className="input" value={name} onChange={(e) => setTitle(e.target.value)} />
               </label>
               <label className="field">
-                <span>Duração</span>
+                <span>Duração{rows.some((r) => r.end.getTime() !== addMinutes(r.start, minutes).getTime()) ? ' (sem hora de fim)' : ''}</span>
                 <select className="input" value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>
-                  {[30, 45, 60, 75, 90, 120].map((m) => (
+                  {DURATIONS.map((m) => (
                     <option key={m} value={m}>
                       {m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60}` : ''}`}
                     </option>
@@ -100,7 +140,7 @@ export function ScheduleImport({ data, onSave, onClose }: Props) {
                 </select>
               </label>
             </div>
-            <ul className="schedule-rows" aria-label="Sessões encontradas">
+            <ul className="schedule-rows" aria-label="Marcações encontradas">
               {rows.map((r) => (
                 <li key={r.key} className={r.clash.length ? 'is-warn' : undefined}>
                   <label>
@@ -118,7 +158,9 @@ export function ScheduleImport({ data, onSave, onClose }: Props) {
                       }
                     />
                     <span>
+                      {r.own && <strong>{r.title} · </strong>}
                       {formatLongDate(r.start)}, {timeOf(r.start)}–{timeOf(r.end)}
+                      {r.location && <span className="muted"> · {r.location}</span>}
                     </span>
                   </label>
                   {r.duplicate ? (
@@ -146,7 +188,7 @@ export function ScheduleImport({ data, onSave, onClose }: Props) {
             Cancelar
           </button>
           <button type="button" className="btn btn-primary" disabled={chosen.length === 0} onClick={save}>
-            {chosen.length === 1 ? 'Adicionar 1 sessão' : `Adicionar ${chosen.length} sessões`}
+            {chosen.length === 1 ? 'Adicionar 1 marcação' : `Adicionar ${chosen.length} marcações`}
           </button>
         </div>
       </div>
