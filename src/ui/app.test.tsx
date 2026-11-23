@@ -92,6 +92,34 @@ describe('app', () => {
     expect(within(dialog).getByLabelText(/Duração/)).toHaveValue('30')
   })
 
+  it('troca turnos: mostra antes e depois, põe a saída D e avisa do descanso curto antes de gravar', async () => {
+    const shiftDays = [
+      { date: '2026-11-24', code: 'M' },
+      { date: '2026-11-25', code: 'N' },
+      { date: '2026-11-26', code: 'D' },
+    ]
+    const store = new MemoryStore({ ...emptyData(), shiftDays })
+    const user = userEvent.setup()
+    render(<App store={store} />)
+    await user.click(within(await screen.findByRole('navigation')).getByRole('button', { name: 'Turnos' }))
+    await user.click(await screen.findByRole('button', { name: 'Trocar turnos' }))
+    const dialog = screen.getByRole('dialog', { name: 'Trocar turnos' })
+    await user.type(within(dialog).getByLabelText('Trocas a fazer'), 'dia 24 faço t, 25 m, 26 n')
+    expect(within(within(dialog).getByRole('list', { name: 'Antes e depois' })).getAllByRole('listitem')).toHaveLength(4)
+    expect(within(dialog).getByText('saída da noite')).toBeInTheDocument()
+    expect(within(dialog).getByText(/Só 10 h de descanso entre T e M/)).toBeInTheDocument()
+    expect(store.data.shiftDays).toEqual(shiftDays)
+    await user.click(within(dialog).getByRole('button', { name: 'Gravar 4 dias' }))
+    await waitFor(() =>
+      expect(store.data.shiftDays).toEqual([
+        { date: '2026-11-24', code: 'T' },
+        { date: '2026-11-25', code: 'M' },
+        { date: '2026-11-26', code: 'N' },
+        { date: '2026-11-27', code: 'D' },
+      ]),
+    )
+  })
+
   it('cria um evento a partir do botão Novo e grava-o', async () => {
     const store = new MemoryStore()
     const user = userEvent.setup()

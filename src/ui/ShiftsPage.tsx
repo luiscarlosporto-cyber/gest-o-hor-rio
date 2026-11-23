@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { addMonths, daysInMonth, formatMonthYear, monthGrid, toDateKey, weekdayShort } from '../domain/dates'
 import { mergeShiftDays, parseRosterLine, shiftErrors, summarizeMonth, findType, type RosterParseResult } from '../domain/shifts'
 import type { AppData, ShiftDay, ShiftType } from '../domain/types'
+import { ShiftSwap } from './ShiftSwap'
 import { SisqualImport } from './SisqualImport'
 
 interface Props {
@@ -20,6 +21,7 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
   const [paste, setPaste] = useState('')
   const [skipFirst, setSkipFirst] = useState(true)
   const [preview, setPreview] = useState<RosterParseResult | null>(null)
+  const [swapping, setSwapping] = useState(false)
 
   const byDate = useMemo(() => new Map(data.shiftDays.map((d) => [d.date, d.code])), [data.shiftDays])
   const extras = useMemo(() => new Set(data.shiftDays.filter((d) => d.extra).map((d) => d.date)), [data.shiftDays])
@@ -63,10 +65,16 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
           </button>
           <h1 className="toolbar-title">Turnos · {formatMonthYear(cursor)}</h1>
         </div>
-        <span className="muted">
-          {filled} de {total} dias preenchidos
-        </span>
+        <div className="toolbar-group">
+          <span className="muted">
+            {filled} de {total} dias preenchidos
+          </span>
+          <button className="btn btn-primary" onClick={() => setSwapping(true)}>
+            Trocar turnos
+          </button>
+        </div>
       </header>
+      {swapping && <ShiftSwap data={data} year={year} month={month} update={update} onClose={() => setSwapping(false)} />}
 
       <div className="shifts-layout">
         <section className="card">

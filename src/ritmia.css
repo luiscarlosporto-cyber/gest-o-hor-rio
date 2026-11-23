@@ -281,3 +281,14 @@ input:not([type='checkbox']):not([type='radio']):not([type='range']), select, te
 .schedule-clash { color: var(--text); font-weight: 600; }
 /* A lupa flutuante não fica por cima das janelas abertas. */
 body:has(.modal-backdrop, .more-sheet-backdrop) .global-search-btn { display: none; }
+
+/* Trocar turnos */
+.shift-swap { width: min(520px, 100%); }
+.swap-rows, .swap-warnings { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.swap-rows li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; padding: 8px 12px; border-radius: var(--radius-sm, 10px); background: var(--bg); }
+.swap-rows li.is-auto { border: 1px dashed var(--border, #c8d3e6); }
+.swap-date::first-letter { text-transform: uppercase; }
+.swap-date { display: inline-block; }
+.swap-codes { display: inline-flex; gap: 8px; align-items: center; }
+.swap-auto { flex-basis: 100%; }
+.swap-warnings li { padding: 8px 12px; border-radius: var(--radius-sm, 10px); background: color-mix(in srgb, var(--shift-afternoon, #f07f63) 16%, transparent); color: var(--text); }
