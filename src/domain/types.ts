@@ -1,3 +1,4 @@
+import type { Payslip } from './payslip'
 import type { Task } from './tasks'
 
 /**
@@ -120,4 +121,6 @@ export interface AppData {
   shiftTypes: ShiftType[]
   tasks: Task[]
   pay?: PaySettings
+  /** Talões de vencimento carregados (só rubricas e valores). */
+  payslips?: Payslip[]
 }

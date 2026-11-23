@@ -3,14 +3,16 @@ import { addMonths, formatMonthYear, parseLocal, weekdayShort } from '../domain/
 import { estimatePay, premiumHours, projectSalary } from '../domain/payroll'
 import { fmtHours, monthReport, reportCsv } from '../domain/reports'
 import { CATEGORIES, type AppData } from '../domain/types'
+import { PayslipCheck } from './PayslipCheck'
 
 interface Props {
   data: AppData
   cursor: Date
   setCursor: (d: Date) => void
+  update: (fn: (d: AppData) => AppData) => void
 }
 
-export function ReportsPage({ data, cursor, setCursor }: Props) {
+export function ReportsPage({ data, cursor, setCursor, update }: Props) {
   const year = cursor.getFullYear()
   const month = cursor.getMonth()
   const r = useMemo(() => monthReport(data, year, month), [data, year, month])
@@ -269,6 +271,8 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
           <p className="small muted">Para a projeção, escolhe a tua categoria e posição em Definições → Vencimento.</p>
         )}
       </section>
+
+      <PayslipCheck data={data} update={update} cursor={cursor} setCursor={setCursor} />
 
       <section className="card" aria-labelledby="r-days">
         <div className="card-head">

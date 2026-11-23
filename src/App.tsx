@@ -150,7 +150,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
             }}
           />
         )}
-        {page === 'reports' && <ReportsPage data={data} cursor={cursor} setCursor={setCursor} />}
+        {page === 'reports' && <ReportsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
         {page === 'calendar' && <CalendarPage data={data} update={update} cursor={cursor} setCursor={setCursor} view={view} setView={setView} />}
         {page === 'tasks' && <TasksPage data={data} update={update} cloud={cloud} />}
         {page === 'shifts' && <ShiftsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}

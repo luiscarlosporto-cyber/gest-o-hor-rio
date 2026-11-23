@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { DEFAULT_SHIFT_TYPES } from '../domain/shifts'
 import type { Task } from '../domain/tasks'
+import type { Payslip } from '../domain/payslip'
 import type { AppData, CalendarEvent, PaySettings, ShiftDay, ShiftType } from '../domain/types'
 import type { DataStore } from './store'
 
@@ -147,14 +148,15 @@ export class SupabaseStore implements DataStore {
   }
 
   async load(): Promise<AppData> {
-    const [ev, sd, st, tk, pr] = await Promise.all([
+    const [ev, sd, st, tk, pr, ps] = await Promise.all([
       this.db.from('events').select('*').is('deleted_at', null),
       this.db.from('shift_days').select('day, code, extra').is('deleted_at', null),
       this.db.from('shift_types').select('*').order('sort_order'),
       this.db.from('tasks').select('*'),
       this.db.from('profiles').select('pay_settings').eq('id', this.userId).maybeSingle(),
+      this.db.from('payslips').select('year, month, data').order('year').order('month'),
     ])
-    for (const r of [ev, sd, st, tk, pr]) if (r.error) throw new Error(r.error.message)
+    for (const r of [ev, sd, st, tk, pr, ps]) if (r.error) throw new Error(r.error.message)
     const types = (st.data as ShiftTypeRow[]).map<ShiftType>((t) => ({
       code: t.code,
       label: t.label,
@@ -171,6 +173,7 @@ export class SupabaseStore implements DataStore {
       shiftTypes: types.length ? types : DEFAULT_SHIFT_TYPES,
       tasks: ((tk.data ?? []) as TaskRow[]).map(rowToTask),
       pay: (pr.data as { pay_settings?: PaySettings | null } | null)?.pay_settings ?? undefined,
+      payslips: ((ps.data ?? []) as { year: number; month: number; data: Payslip }[]).map((r) => ({ ...r.data, year: r.year, month: r.month })),
     }
     this.last = data
     return data
@@ -217,6 +220,16 @@ export class SupabaseStore implements DataStore {
       if (days.length) await check(this.db.from('shift_days').update({ extra: on }).eq('user_id', uid).in('day', days))
     }
     if (sdRemoved.length) await check(this.db.from('shift_days').update({ deleted_at: now, dirty: true }).eq('user_id', uid).in('day', sdRemoved))
+
+    // Talões
+    const slipKey = (s: Payslip) => `${s.year}-${s.month}`
+    const prevSlips = new Map((prev.payslips ?? []).map((s) => [slipKey(s), JSON.stringify(s)]))
+    const nextSlips = next.payslips ?? []
+    const slipChanged = nextSlips.filter((s) => prevSlips.get(slipKey(s)) !== JSON.stringify(s))
+    if (slipChanged.length) await check(this.db.from('payslips').upsert(slipChanged.map((s) => ({ user_id: uid, year: s.year, month: s.month, data: s }))))
+    for (const s of prev.payslips ?? []) {
+      if (!nextSlips.some((n) => slipKey(n) === slipKey(s))) await check(this.db.from('payslips').delete().eq('user_id', uid).eq('year', s.year).eq('month', s.month))
+    }
 
     // Dados de vencimento (perfil)
     if (JSON.stringify(prev.pay) !== JSON.stringify(next.pay)) {

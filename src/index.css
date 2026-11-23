@@ -371,6 +371,7 @@ kbd { font-family: inherit; font-size: 12px; border: 1px solid var(--line); bord
 .print-only { display: none; }
 .pay-table th { font-weight: 400; }
 .pay-warn { color: var(--danger); margin: 0; }
+.pay-table tr.is-off td, .pay-table tr.is-off th { color: var(--danger); font-weight: 600; }
 @media print {
   .sidebar, .no-print { display: none !important; }
   .app { display: block; height: auto; }
