@@ -5,7 +5,8 @@ import { useAppData } from './state/useAppData'
 import { useCloud } from './state/useCloud'
 import type { View } from './ui/CalendarPage'
 import type { Theme } from './ui/SettingsPage'
-import { IconCalendar, IconHome, IconReport, IconSettings, IconShifts, IconTasks } from './ui/icons'
+import { IconCalendar, IconHome, IconReport, IconSearch, IconSettings, IconShifts, IconTasks } from './ui/icons'
+import { GlobalSearch } from './ui/GlobalSearch'
 import { HomePage } from './ui/HomePage'
 import { pendingCount } from './domain/tasks'
 import { onUpdateReady } from './pwa'
@@ -39,6 +40,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
   const [cursor, setCursor] = useState(() => new Date())
   const [theme, setTheme] = useState<Theme>(() => readPref<Theme>('gh:theme', 'system'))
   const [signInError, setSignInError] = useState<string | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [applyUpdate, setApplyUpdate] = useState<(() => void) | null>(null)
   useEffect(() => onUpdateReady((apply) => setApplyUpdate(() => apply)), [])
 
@@ -61,6 +63,12 @@ export default function App({ store: injected }: { store?: DataStore }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement
+      const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable
+      if (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') || (e.key === '/' && !typing)) {
+        e.preventDefault()
+        setSearchOpen(true)
+        return
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !['INPUT', 'TEXTAREA'].includes(t.tagName)) {
         e.preventDefault()
         undo()
@@ -111,6 +119,11 @@ export default function App({ store: injected }: { store?: DataStore }) {
           </span>
           <span>Gestão Horário</span>
         </div>
+        <button className="global-search-btn" onClick={() => setSearchOpen(true)} aria-label="Pesquisar em toda a app">
+          <IconSearch />
+          <span>Pesquisar</span>
+          <kbd>Ctrl K</kbd>
+        </button>
         <NavItem icon={<IconHome />} label="Início" active={page === 'home'} onClick={() => setPage('home')} />
         <NavItem icon={<IconCalendar />} label="Calendário" active={page === 'calendar'} onClick={() => setPage('calendar')} />
         <NavItem icon={<IconTasks />} label="Tarefas" badge={pendingCount(data.tasks, new Date())} active={page === 'tasks'} onClick={() => setPage('tasks')} />
@@ -173,6 +186,22 @@ export default function App({ store: injected }: { store?: DataStore }) {
         {page === 'settings' && <SettingsPage data={data} store={store} theme={theme} setTheme={setTheme} update={update} cloud={cloud} />}
         </Suspense>
       </main>
+      {searchOpen && (
+        <GlobalSearch
+          data={data}
+          onClose={() => setSearchOpen(false)}
+          openDay={(d) => {
+            setCursor(d)
+            setView('day')
+            setPage('calendar')
+          }}
+          openShifts={(d) => {
+            setCursor(d)
+            setPage('shifts')
+          }}
+          openTasks={() => setPage('tasks')}
+        />
+      )}
     </div>
   )
 }

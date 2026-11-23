@@ -119,6 +119,23 @@ describe('app', () => {
     expect(screen.getByRole('heading', { name: 'Quinta-feira, 10 de dezembro' })).toBeInTheDocument()
   })
 
+  it('pesquisa em toda a app e abre o dia do compromisso', async () => {
+    const store = new MemoryStore({
+      ...emptyData(),
+      events: [
+        { id: 'a', title: 'Consulta médica', start: '2026-12-10T10:00', end: '2026-12-10T11:00', allDay: false, category: 'pessoal', createdAt: '', updatedAt: '' },
+      ],
+    })
+    const user = userEvent.setup()
+    render(<App store={store} />)
+    await user.click(await screen.findByRole('button', { name: 'Pesquisar em toda a app' }))
+    const dialog = screen.getByRole('dialog', { name: 'Pesquisar em toda a app' })
+    await user.type(within(dialog).getByLabelText('Pesquisar'), 'medica')
+    expect(within(dialog).getByRole('status')).toHaveTextContent('1 resultado')
+    await user.click(within(dialog).getByRole('button', { name: /Consulta médica/ }))
+    expect(await screen.findByRole('heading', { name: 'Quinta-feira, 10 de dezembro' })).toBeInTheDocument()
+  })
+
   it('cria uma tarefa por frase rápida, conclui-a e mostra o número no menu', async () => {
     const store = new MemoryStore()
     const user = userEvent.setup()

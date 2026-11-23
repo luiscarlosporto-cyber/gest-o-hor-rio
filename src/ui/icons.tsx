@@ -40,3 +40,10 @@ export const IconReport = () => (
     <path d="M5 20V10M12 20V4M19 20v-7" />
   </svg>
 )
+
+export const IconSearch = () => (
+  <svg {...base}>
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="M20 20l-4.2-4.2" />
+  </svg>
+)
