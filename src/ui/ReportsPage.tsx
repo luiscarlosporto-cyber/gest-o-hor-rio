@@ -69,7 +69,7 @@ export function ReportsPage({ data, cursor, setCursor, update }: Props) {
 
       <div className="stats">
         <Stat label="Horas de turno" value={fmtHours(r.summary.workedMinutes)} note={r.deltaMinutes ? `${r.deltaMinutes > 0 ? '+' : ''}${fmtHours(r.deltaMinutes)} que no mês anterior` : 'igual ao mês anterior'} />
-        <Stat label="Dias de trabalho" value={String(r.summary.workDays)} note={`${r.nightExits ? `${r.nightExits} ${r.nightExits === 1 ? 'saída' : 'saídas'} da noite, ` : ''}${r.daysOff} de folga ou descanso`} />
+        <Stat label="Dias de trabalho" value={String(r.summary.workDays)} note={`${r.nightExits ? `${r.nightExits} ${r.nightExits === 1 ? 'saída' : 'saídas'} da noite, ` : ''}${r.daysOff} sem trabalho (folgas, descanso, feriados e férias)`} />
         <Stat label="Noites" value={String(r.nights)} note={`${r.weekendsWorked} dias de fim de semana`} />
         <Stat label="Seguidos, no máximo" value={`${r.longestStreak} ${r.longestStreak === 1 ? 'dia' : 'dias'}`} note="de trabalho sem folga" />
       </div>
