@@ -34,6 +34,9 @@ describe('deteção de compromissos', () => {
   it('prazo sem hora vira tarefa', () => {
     expect(detectCommitment(mail('Escalas de janeiro', 'Por favor enviar as trocas até dia 15/12.'))).toMatchObject({ kind: 'task', date: '2026-12-15', time: null })
   })
+  it('ignora compromissos com data anterior ao email', () => {
+    expect(detectCommitment(mail('Reunião de serviço', 'Resumo da reunião de 20/11 às 15h'))).toBeNull()
+  })
   it('ignora publicidade e emails sem data', () => {
     expect(detectCommitment(mail('Black Friday: desconto até amanhã', 'Oferta exclusiva'))).toBeNull()
     expect(detectCommitment(mail('Reunião', 'Quando puderes diz-me a tua disponibilidade.'))).toBeNull()

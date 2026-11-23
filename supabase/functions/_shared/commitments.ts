@@ -121,8 +121,8 @@ export function detectCommitment(mail: MailInput): Suggestion | null {
   if (!isEvent && !isTask) return null
   const date = findDate(text, mail.received)
   const time = findTime(text)
-  // Sem data não há compromisso concreto a sugerir.
-  if (!date) return null
+  // Sem data não há compromisso concreto a sugerir; datas já passadas também não interessam.
+  if (!date || date < key(lisbonDay(mail.received))) return null
   const kind: Suggestion['kind'] = isEvent && time ? 'event' : 'task'
   return {
     gmail_id: mail.id,
