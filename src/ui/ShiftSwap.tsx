@@ -47,7 +47,8 @@ export function ShiftSwap({ data, year, month, update, onClose }: Props) {
         </div>
         <p className="muted small">
           Escreve o dia e o turno que vais fazer, por exemplo “4 T, 5 M, 6 N”. Os dias sem mês são de {monthLabel}; para outro mês escreve
-          “4/1 M”. “Folga” ou “-” também servem.
+          “4/1 M”. “Folga” ou “-” também servem. Dois códigos no mesmo dia, como “24 D N”, ficam como no SISQUAL: fica o turno feito (N) e a
+          saída da noite anterior continua a contar.
         </p>
         <input
           className="input"

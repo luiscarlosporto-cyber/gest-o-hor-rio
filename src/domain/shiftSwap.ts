@@ -1,5 +1,6 @@
 import { addDays, parseLocal, toDateKey } from './dates'
 import { findType, mergeShiftDays, NIGHT_EXIT_CODE, shiftErrors, shiftTimes } from './shifts'
+import { resolveCell } from './sisqual'
 import type { DateKey, ShiftDay, ShiftType } from './types'
 
 /**
@@ -27,6 +28,12 @@ export interface SwapPlan {
   unknown: string[]
 }
 
+/** "DN", "DSM": um código de descanso colado a um de trabalho. */
+function findDouble(w: string, types: ShiftType[]): string | undefined {
+  const r = resolveCell(w.toUpperCase() === w ? w : w.toUpperCase(), types)
+  return r.unknown ? undefined : r.code
+}
+
 const OFF_WORDS = /^(folga|livre|nada|sem|-|–)$/i
 
 /**
@@ -34,7 +41,7 @@ const OFF_WORDS = /^(folga|livre|nada|sem|-|–)$/i
  * (o mês aberto em Turnos).
  */
 export function parseSwapText(text: string, year: number, monthIndex: number, types: ShiftType[]): { changes: SwapChange[]; unknown: string[] } {
-  const re = /(?:dia\s+)?(\d{1,2})(?:\s*[/.]\s*(\d{1,2}))?\s*(?:fa[çc]o|fazer|passa\s+a|=|:|-|–|→|>)?\s*([A-Za-zÀ-ú]+\d?|-|–)/gi
+  const re = /(?:dia\s+)?(\d{1,2})(?:\s*[/.]\s*(\d{1,2}))?\s*(?:fa[çc]o|fazer|passa\s+a|=|:|-|–|→|>)?\s*((?:[A-Za-zÀ-ú]+\d?)(?:\s+(?!dia\b)[A-Za-zÀ-ú]+\d?)*|-|–)/gi
   const changes = new Map<DateKey, string>()
   const unknown: string[] = []
   for (const m of text.matchAll(re)) {
@@ -42,11 +49,19 @@ export function parseSwapText(text: string, year: number, monthIndex: number, ty
     const month = m[2] ? Number(m[2]) - 1 : monthIndex
     const date = new Date(year, month, day)
     if (day < 1 || month < 0 || month > 11 || date.getMonth() !== month) continue
-    const word = m[3]
+    const word = m[3].trim()
+    const one = (w: string): string | undefined => {
+      if (/^(folga|livre)$/i.test(w)) return types.find((t) => /folga/i.test(t.label))?.code ?? ''
+      if (OFF_WORDS.test(w)) return ''
+      return findType(types, w)?.code ?? findDouble(w, types)
+    }
+    // Vários códigos no mesmo dia ("24 D N" = saída da noite anterior + nova noite): como no SISQUAL, fica o turno feito.
+    const words = word.split(/\s+/).filter((w) => !/^e$/i.test(w))
+    const codes = words.map(one)
     let code: string | undefined
-    if (/^(folga|livre)$/i.test(word)) code = types.find((t) => /folga/i.test(t.label))?.code ?? ''
-    else if (OFF_WORDS.test(word)) code = ''
-    else code = findType(types, word)?.code
+    if (codes.some((c) => c === undefined)) code = undefined
+    else if (codes.length === 1) code = codes[0]
+    else code = resolveCell(codes.filter(Boolean).join(' '), types).code
     if (code === undefined) {
       unknown.push(`${day} ${word}`)
       continue

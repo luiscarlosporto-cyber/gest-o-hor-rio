@@ -33,6 +33,36 @@ describe('parseSwapText', () => {
   })
 })
 
+describe('dois códigos no mesmo dia', () => {
+  it('"24 D N" e "24 DN" ficam N (saída da noite anterior + nova noite) e o dia seguinte ganha a saída D', () => {
+    const days: ShiftDay[] = [
+      { date: '2026-11-23', code: 'N' },
+      { date: '2026-11-24', code: 'D' },
+      { date: '2026-11-25', code: 'F' },
+    ]
+    for (const text of ['24 D N', '24 dn', 'dia 24 faço D N']) {
+      const { changes, unknown } = parseSwapText(text, 2026, 10, T)
+      expect(unknown).toEqual([])
+      expect(changes).toEqual([{ date: '2026-11-24', code: 'N' }])
+    }
+    const plan = planSwap(days, T, [{ date: '2026-11-24', code: 'N' }])
+    expect(plan.rows.map((r) => [r.date, r.before, r.after])).toEqual([
+      ['2026-11-24', 'D', 'N'],
+      ['2026-11-25', 'F', 'D'],
+    ])
+    expect(plan.warnings).toEqual([])
+  })
+
+  it('"5 DS M" fica M e vários dias seguidos continuam a ler-se', () => {
+    const { changes } = parseSwapText('5 DS M, 6 n e 7 d', 2026, 11, T)
+    expect(changes).toEqual([
+      { date: '2026-12-05', code: 'M' },
+      { date: '2026-12-06', code: 'N' },
+      { date: '2026-12-07', code: 'D' },
+    ])
+  })
+})
+
 describe('planSwap', () => {
   it('mostra o antes e o depois, mete a saída D depois da noite nova e tira a D da noite que saiu', () => {
     const { changes } = parseSwapText('4 T, 5 M, 6 N', 2026, 11, T)
