@@ -17,25 +17,25 @@ describe('horas com acréscimo como no talão', () => {
     const data = {
       ...emptyData(),
       shiftDays: [
-        { date: '2026-06-01', code: 'N' }, // segunda 22h → terça 07h (conta 9h): 9h noturnas em dia útil
+        { date: '2026-06-01', code: 'N' }, // segunda 22h → terça 09h: 9h noturnas (até às 7h) em dia útil
         { date: '2026-06-06', code: 'MT2' }, // sábado 08:30–22:30: 4,5h antes das 13h (normais), 7h sáb>13, 2,5h noturnas sáb
-        { date: '2026-06-10', code: 'N' }, // feriado 22h → quinta 07h: 2h noturnas feriado, 7h noturnas dia útil
+        { date: '2026-06-10', code: 'N' }, // feriado 22h → quinta 09h: 2h noturnas feriado, 7h noturnas dia útil
       ],
     }
     const p = premiumHours(data, 2026, 5)
     expect(p.weekdayNight).toBe(9 + 7)
     expect(p.weekendDay).toBe(7)
     expect(p.weekendNight).toBe(2.5 + 2)
-    expect(p.total).toBe(9 + 14 + 9)
+    expect(p.total).toBe(11 + 14 + 11)
     expect(p.missingDays).toHaveLength(27)
   })
   it('a madrugada de sábado (noite de sexta) é noturno de dia útil; a de domingo é de fim de semana', () => {
     const data = { ...emptyData(), shiftDays: [{ date: '2026-06-12', code: 'N' }, { date: '2026-06-13', code: 'N' }] }
     const p = premiumHours(data, 2026, 5)
-    // a N conta 22h–07h: sex → sáb 9h dia útil; sáb → dom 9h fim de semana
+    // noturno até às 7h: sex → sáb 9h dia útil; sáb → dom 9h fim de semana e 07–09h de domingo diurnas
     expect(p.weekdayNight).toBe(9)
     expect(p.weekendNight).toBe(9)
-    expect(p.weekendDay).toBe(0)
+    expect(p.weekendDay).toBe(2)
   })
   it('turnos extra contam como suplementar (1.ª hora e seguintes), fora das rubricas TN', () => {
     const data = {
@@ -48,7 +48,8 @@ describe('horas com acréscimo como no talão', () => {
     }
     const p = premiumHours(data, 2026, 11)
     expect(p.extra.dayWeekday).toEqual({ first: 1, next: 6 })
-    expect(p.extra.nightWeekdayOrDayRest).toEqual({ first: 1, next: 10.5 })
+    expect(p.extra.dayRest).toEqual({ first: 1, next: 10.5 })
+    expect(p.extra.nightWeekday).toEqual({ first: 0, next: 0 })
     expect(p.extra.nightRest).toEqual({ first: 0, next: 2.5 })
     expect(p.weekdayNight).toBe(2.5)
     expect(p.weekendDay).toBe(0)
@@ -83,7 +84,7 @@ describe('categorias e posições', () => {
 })
 
 describe('junho de 2026 (horário final da UCIP) contra o talão de julho', () => {
-  it('bate no noturno: 47,93h em dia útil e 25h ao fim de semana', () => {
+  it('bate com todas as rubricas TN e E do talão', () => {
     const raw =
       '05-31 DS,06-01 N,06-02 D,06-03 N,06-04 N+,06-05 D,06-06 MT2,06-07 N,06-08 D,06-09 T,06-10 Fe,06-11 MT2,06-12 N,06-13 N,06-14 D,06-15 DS,06-16 MT2+,06-17 N,06-18 D,06-19 Cgs,06-20 MT2,06-21 N,06-22 D,06-23 DS,06-24 T+,06-25 Fe,06-26 DS,06-27 DC,06-28 DS,06-29 T+,06-30 M+'
     const shiftDays = raw.split(',').map((x) => {
@@ -92,7 +93,10 @@ describe('junho de 2026 (horário final da UCIP) contra o talão de julho', () =
     })
     const p = premiumHours({ ...emptyData(), shiftDays }, 2026, 5)
     expect(p.weekdayNight).toBe(48) // talão: 47,93
+    expect(p.weekendDay).toBe(18) // talão: 18
     expect(p.weekendNight).toBe(25) // talão: 25
+    // suplementar (talão: E DUDiu1ª 4; DUDiuSeg 26,46; DUNotSeg 14,5; FerNot1ª 1; FerNotSeg 1)
+    expect(p.extra).toEqual({ dayWeekday: { first: 4, next: 26.5 }, nightWeekday: { first: 0, next: 14.5 }, dayRest: { first: 0, next: 0 }, nightRest: { first: 1, next: 1 } })
     expect(p.missingDays).toEqual([])
   })
 })

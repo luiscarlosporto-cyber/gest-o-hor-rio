@@ -1,22 +1,24 @@
 import { addDays, parseLocal, toDateKey } from './dates'
-import { findType, paidTimes } from './shifts'
+import { findType, shiftTimes } from './shifts'
 import type { AppData, DateKey, PaySettings } from './types'
 
 /**
  * Horas com acréscimo, com as mesmas rubricas do talão de vencimento (pessoal hospitalar, DL 62/79):
- * - noturno: entre as 20h e as 8h;
+ * - noturno: entre as 20h e as 7h (confirmado com o talão de julho de 2026);
  * - sábado depois das 13h (noturno de sábado só depois das 20h), domingos e feriados.
  * Tabela de referência: Remuneração da Carreira de Enfermagem 2026 (R = remuneração × 12 / (52 × 35)).
  * O talão paga num mês as horas do mês anterior (ex.: talão de julho = trabalho de junho).
  * Não inclui trabalho suplementar (horas além do horário contratado).
  */
 
-export type ExtraBand = 'dayWeekday' | 'nightWeekdayOrDayRest' | 'nightRest'
+/** Rubricas do suplementar como no talão: DU = dia útil; Rest = sábado >13h, domingo, feriado ou descanso. */
+export type ExtraBand = 'dayWeekday' | 'nightWeekday' | 'dayRest' | 'nightRest'
 
 /** Multiplicadores do valor/hora (R) no trabalho suplementar: [1.ª hora, seguintes]. */
 export const EXTRA_RATES: Record<ExtraBand, [number, number]> = {
   dayWeekday: [1.25, 1.5],
-  nightWeekdayOrDayRest: [1.75, 2],
+  nightWeekday: [1.75, 2],
+  dayRest: [1.75, 2],
   nightRest: [2.25, 2.5],
 }
 
@@ -59,12 +61,14 @@ export function estimatePay(p: PremiumHours, settings?: PaySettings): PayEstimat
     { label: 'TN noturno em dias úteis (+50%)', hours: p.weekdayNight, factor: 0.5 },
     { label: 'TN sábado >13h, domingo e feriado, diurno (+50%)', hours: p.weekendDay, factor: 0.5 },
     { label: 'TN sábado, domingo e feriado, noturno (+100%)', hours: p.weekendNight, factor: 1 },
-    { label: 'Suplementar diurno, 1.ª hora (1,25R)', hours: p.extra.dayWeekday.first, factor: 1.25 },
-    { label: 'Suplementar diurno, seguintes (1,5R)', hours: p.extra.dayWeekday.next, factor: 1.5 },
-    { label: 'Suplementar noturno útil ou diurno fim de semana, 1.ª hora (1,75R)', hours: p.extra.nightWeekdayOrDayRest.first, factor: 1.75 },
-    { label: 'Suplementar noturno útil ou diurno fim de semana, seguintes (2R)', hours: p.extra.nightWeekdayOrDayRest.next, factor: 2 },
-    { label: 'Suplementar noturno fim de semana, 1.ª hora (2,25R)', hours: p.extra.nightRest.first, factor: 2.25 },
-    { label: 'Suplementar noturno fim de semana, seguintes (2,5R)', hours: p.extra.nightRest.next, factor: 2.5 },
+    { label: 'Suplementar diurno em dia útil, 1.ª hora (1,25R)', hours: p.extra.dayWeekday.first, factor: 1.25 },
+    { label: 'Suplementar diurno em dia útil, seguintes (1,5R)', hours: p.extra.dayWeekday.next, factor: 1.5 },
+    { label: 'Suplementar noturno em dia útil, 1.ª hora (1,75R)', hours: p.extra.nightWeekday.first, factor: 1.75 },
+    { label: 'Suplementar noturno em dia útil, seguintes (2R)', hours: p.extra.nightWeekday.next, factor: 2 },
+    { label: 'Suplementar diurno sáb./dom./feriado, 1.ª hora (1,75R)', hours: p.extra.dayRest.first, factor: 1.75 },
+    { label: 'Suplementar diurno sáb./dom./feriado, seguintes (2R)', hours: p.extra.dayRest.next, factor: 2 },
+    { label: 'Suplementar noturno sáb./dom./feriado, 1.ª hora (2,25R)', hours: p.extra.nightRest.first, factor: 2.25 },
+    { label: 'Suplementar noturno sáb./dom./feriado, seguintes (2,5R)', hours: p.extra.nightRest.next, factor: 2.5 },
   ]
     .filter((l) => l.hours > 0)
     .map((l) => ({ ...l, amount: Math.round(l.hours * l.factor * rate * 100) / 100 }))
@@ -83,9 +87,7 @@ export interface PremiumHours {
   /**
    * Trabalho suplementar (turnos marcados como extra), por escalão da tabela de enfermagem.
    * first = 1.ª hora de cada turno extra, next = horas seguintes.
-   * dayWeekday: diurno em dia útil (1,25R / 1,5R)
-   * nightWeekdayOrDayRest: noturno em dia útil, ou diurno ao sábado >13h, domingo, feriado (1,75R / 2R)
-   * nightRest: noturno ao sábado >20h, domingo, feriado (2,25R / 2,5R)
+   * Rubricas e valores: ver EXTRA_RATES.
    */
   extra: Record<ExtraBand, { first: number; next: number }>
   /** Dias do mês sem nenhum turno registado (o cálculo fica incompleto). */
@@ -135,7 +137,7 @@ export function premiumHours(data: AppData, year: number, month: number, opts: {
     weekendNight: 0,
     total: 0,
     missingDays: [],
-    extra: { dayWeekday: { first: 0, next: 0 }, nightWeekdayOrDayRest: { first: 0, next: 0 }, nightRest: { first: 0, next: 0 } },
+    extra: { dayWeekday: { first: 0, next: 0 }, nightWeekday: { first: 0, next: 0 }, dayRest: { first: 0, next: 0 }, nightRest: { first: 0, next: 0 } },
   }
   const byDate = new Map(data.shiftDays.map((s) => [s.date, s]))
 
@@ -149,20 +151,21 @@ export function premiumHours(data: AppData, year: number, month: number, opts: {
     }
     const type = findType(data.shiftTypes, day.code)
     if (!type?.work || !type.start || !type.end) continue
-    const { start, end } = paidTimes(key, type)
+    // Para os acréscimos conta a presença toda (ex.: N 22h–09h), como no talão.
+    const { start, end } = shiftTimes(key, type)
     for (let t = start.getTime(); t < end.getTime(); t += STEP * 60_000) {
       const at = new Date(t)
       const h = at.getHours() + at.getMinutes() / 60
       const dayKey = toDateKey(at)
       const dow = at.getDay()
-      const night = h >= 20 || h < 8
+      const night = h >= 20 || h < 7
       // Sábado só conta a partir das 13h (diurno) e das 20h (noturno): a madrugada de sábado é noturno de dia útil.
       const special = dow === 0 || hol.has(dayKey) || (dow === 6 && h >= 13)
       const hours = STEP / 60
       out.total += hours
       if (day.extra) {
         // Suplementar: já inclui o acréscimo noturno/fim de semana, não entra nas rubricas TN.
-        const band: ExtraBand = night && special ? 'nightRest' : night || special ? 'nightWeekdayOrDayRest' : 'dayWeekday'
+        const band: ExtraBand = night ? (special ? 'nightRest' : 'nightWeekday') : special ? 'dayRest' : 'dayWeekday'
         out.extra[band][t - start.getTime() < 60 * 60_000 ? 'first' : 'next'] += hours
         continue
       }

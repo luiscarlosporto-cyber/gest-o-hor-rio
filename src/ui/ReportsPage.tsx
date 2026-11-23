@@ -17,7 +17,7 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
   const pay = useMemo(() => premiumHours(data, year, month), [data, year, month])
   const est = useMemo(() => estimatePay(pay, data.pay), [pay, data.pay])
   const ex = pay.extra
-  const extraHours = ex.dayWeekday.first + ex.dayWeekday.next + ex.nightWeekdayOrDayRest.first + ex.nightWeekdayOrDayRest.next + ex.nightRest.first + ex.nightRest.next
+  const extraHours = Object.values(ex).reduce((a, b) => a + b.first + b.next, 0)
   const euro = (n: number) => n.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })
   const payslip = formatMonthYear(addMonths(cursor, 1))
   const nextPay = addMonths(cursor, 1)
@@ -139,7 +139,7 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
       <section className="card" aria-labelledby="r-pay">
         <h2 id="r-pay">Para conferir o vencimento</h2>
         <p className="small muted">
-          Horas deste mês com acréscimo, com os nomes do talão. São pagas no talão de <strong>{payslip.toLowerCase()}</strong>. Noturno das 20h às 8h; sábado depois das 13h (noturno de sábado só depois das 20h), domingos e
+          Horas deste mês com acréscimo, com os nomes do talão. São pagas no talão de <strong>{payslip.toLowerCase()}</strong>. Noturno das 20h às 7h; sábado depois das 13h (noturno de sábado só depois das 20h), domingos e
           feriados (nacionais e municipal). Os turnos marcados como extra contam como trabalho suplementar.
         </p>
         <table className="report-table pay-table">
@@ -165,9 +165,15 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
                   </td>
                 </tr>
                 <tr>
-                  <th scope="row">Suplementar noturno útil ou diurno sáb. &gt;13h, dom. e feriado</th>
+                  <th scope="row">Suplementar noturno em dia útil (1.ª hora / seguintes)</th>
                   <td className="num">
-                    {dec(ex.nightWeekdayOrDayRest.first)} / {dec(ex.nightWeekdayOrDayRest.next)} h
+                    {dec(ex.nightWeekday.first)} / {dec(ex.nightWeekday.next)} h
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Suplementar diurno sáb. &gt;13h, dom. e feriado</th>
+                  <td className="num">
+                    {dec(ex.dayRest.first)} / {dec(ex.dayRest.next)} h
                   </td>
                 </tr>
                 <tr>
