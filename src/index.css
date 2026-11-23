@@ -435,3 +435,9 @@ kbd { font-family: inherit; font-size: 12px; border: 1px solid var(--line); bord
 .sisqual-row .field { flex: 1 1 140px; }
 .badge.is-changed { outline: 2px solid var(--accent, #2f6fde); outline-offset: 1px; }
 .badge .extra-pill { margin-left: 3px; font-size: 9px; padding: 0 4px; }
+.month-chips { border: 0; padding: 0; margin: 8px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.month-chips legend { margin-bottom: 4px; }
+.chip-toggle { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: inherit; }
+.chip-toggle.is-on { background: var(--text, #222); color: var(--panel, #fff); border-color: transparent; }
+.salary-table .is-deduction td, .salary-table .is-deduction th { color: var(--muted); }
+.salary-table .net th, .salary-table .net td { font-size: 16px; border-top: 2px solid var(--line); }

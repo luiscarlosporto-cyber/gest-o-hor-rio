@@ -160,7 +160,7 @@ function GoogleCard({ cloud }: { cloud: ReturnType<typeof useCloud> }) {
 const euro = (n: number) => n.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })
 
 function PayCard({ pay, onChange }: { pay?: PaySettings; onChange: (p: PaySettings) => void }) {
-  const p = pay ?? defaultPaySettings()
+  const p = { ...defaultPaySettings(), ...pay }
   const set = (patch: Partial<PaySettings>) => onChange({ ...p, ...patch })
   const base = monthlyBase(p)
   const custom = !CATEGORIES_ENF.includes(p.category as (typeof CATEGORIES_ENF)[number])
@@ -256,6 +256,31 @@ function PayCard({ pay, onChange }: { pay?: PaySettings; onChange: (p: PaySettin
           />
         </label>
       </div>
+      <h3 className="pay-sub">Para a projeção do talão</h3>
+      <div className="pay-form">
+        <NumField label="Prémio (% da base)" value={p.bonusPct} step="0.01" onChange={(bonusPct) => set({ bonusPct })} />
+        <NumField label="Subsídio de refeição por dia (€)" value={p.mealPerDay} step="0.01" onChange={(mealPerDay) => set({ mealPerDay })} />
+        <NumField label="Segurança Social / CGA (%)" value={p.socialPct} step="0.1" onChange={(socialPct) => set({ socialPct })} />
+        <NumField label="ADSE (%)" value={p.adsePct} step="0.1" onChange={(adsePct) => set({ adsePct })} />
+        <NumField label="Taxa de IRS do talão (%)" value={p.irsPct} step="0.1" onChange={(irsPct) => set({ irsPct })} />
+      </div>
+      <fieldset className="month-chips">
+        <legend className="small">Meses em que o prémio não é pago</legend>
+        {MONTHS_SHORT.map((m, i) => {
+          const on = (p.bonusSkipMonths ?? []).includes(i)
+          return (
+            <button
+              key={m}
+              type="button"
+              className={`chip-toggle${on ? ' is-on' : ''}`}
+              aria-pressed={on}
+              onClick={() => set({ bonusSkipMonths: on ? (p.bonusSkipMonths ?? []).filter((x) => x !== i) : [...(p.bonusSkipMonths ?? []), i].sort((a, b) => a - b) })}
+            >
+              {m}
+            </button>
+          )
+        })}
+      </fieldset>
       {base ? (
         <p className="small">
           Valor/hora (R): <strong>{euro(hourlyRate(base, p.weeklyHours))}</strong> · base {euro(base)}
@@ -264,5 +289,16 @@ function PayCard({ pay, onChange }: { pay?: PaySettings; onChange: (p: PaySettin
         <p className="small muted">Escolhe a posição para ver o valor/hora.</p>
       )}
     </section>
+  )
+}
+
+const MONTHS_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+
+function NumField({ label, value, step, onChange }: { label: string; value?: number; step: string; onChange: (v: number | undefined) => void }) {
+  return (
+    <label className="field">
+      <span>{label}</span>
+      <input type="number" inputMode="decimal" min="0" step={step} value={value ?? ''} onChange={(e) => onChange(e.target.value === '' ? undefined : Number(e.target.value))} />
+    </label>
   )
 }

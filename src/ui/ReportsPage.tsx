@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { addMonths, formatMonthYear, parseLocal, weekdayShort } from '../domain/dates'
-import { estimatePay, premiumHours } from '../domain/payroll'
+import { estimatePay, premiumHours, projectSalary } from '../domain/payroll'
 import { fmtHours, monthReport, reportCsv } from '../domain/reports'
 import { CATEGORIES, type AppData } from '../domain/types'
 
@@ -20,6 +20,8 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
   const extraHours = ex.dayWeekday.first + ex.dayWeekday.next + ex.nightWeekdayOrDayRest.first + ex.nightWeekdayOrDayRest.next + ex.nightRest.first + ex.nightRest.next
   const euro = (n: number) => n.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })
   const payslip = formatMonthYear(addMonths(cursor, 1))
+  const nextPay = addMonths(cursor, 1)
+  const salary = useMemo(() => projectSalary(data, nextPay.getFullYear(), nextPay.getMonth()), [data, nextPay.getFullYear(), nextPay.getMonth()])
   const dec = (h: number) => h.toFixed(2).replace('.', ',')
   const [showDays, setShowDays] = useState(false)
   const maxWeek = Math.max(60, ...r.weeks.map((w) => w.minutes))
@@ -205,6 +207,54 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
             Faltam turnos em {pay.missingDays.length} {pay.missingDays.length === 1 ? 'dia' : 'dias'} ({pay.missingDays.map((d) => parseLocal(d).getDate()).join(', ')}). Preenche-os em Turnos para o cálculo
             bater certo com o talão.
           </p>
+        )}
+      </section>
+
+      <section className="card" aria-labelledby="r-salary">
+        <h2 id="r-salary">Projeção do talão de {payslip.toLowerCase()}</h2>
+        {salary ? (
+          <>
+            <table className="report-table pay-table salary-table">
+              <tbody>
+                {salary.lines
+                  .filter((l) => l.kind === 'earning')
+                  .map((l) => (
+                    <tr key={l.label}>
+                      <th scope="row">{l.label}</th>
+                      <td className="num">{euro(l.amount)}</td>
+                    </tr>
+                  ))}
+                <tr>
+                  <th scope="row">Bruto</th>
+                  <td className="num">
+                    <strong>{euro(salary.gross)}</strong>
+                  </td>
+                </tr>
+                {salary.lines
+                  .filter((l) => l.kind === 'deduction')
+                  .map((l) => (
+                    <tr key={l.label} className="is-deduction">
+                      <th scope="row">{l.label}</th>
+                      <td className="num">−{euro(l.amount)}</td>
+                    </tr>
+                  ))}
+                <tr className="net">
+                  <th scope="row">Líquido estimado</th>
+                  <td className="num">
+                    <strong>{euro(salary.net)}</strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            {salary.notes.map((n) => (
+              <p key={n} className="small pay-warn">
+                {n}
+              </p>
+            ))}
+            <p className="small muted">Estimativa: o IRS usa a taxa que indicaste e não entra com deduções pessoais. Ajusta os valores em Definições → Vencimento.</p>
+          </>
+        ) : (
+          <p className="small muted">Para a projeção, escolhe a tua categoria e posição em Definições → Vencimento.</p>
         )}
       </section>
 

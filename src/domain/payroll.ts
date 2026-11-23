@@ -40,7 +40,7 @@ export const CAREER_POSITIONS: Record<(typeof CATEGORIES_ENF)[number], number[]>
 
 export const positionsFor = (category: string) => CAREER_POSITIONS[category as (typeof CATEGORIES_ENF)[number]]
 
-export const defaultPaySettings = (): PaySettings => ({ category: 'Enfermeiro', weeklyHours: 35, municipalHolidays: ['11-11'] })
+export const defaultPaySettings = (): PaySettings => ({ category: 'Enfermeiro', weeklyHours: 35, municipalHolidays: ['11-11'], bonusPct: 14.28, bonusSkipMonths: [5], socialPct: 11, adsePct: 3.5 })
 
 export const monthlyBase = (p?: PaySettings) => p?.monthly ?? (p?.level ? TRU_2026[p.level] : undefined)
 
@@ -181,3 +181,65 @@ export const workMonthForPayslip = (year: number, month: number) => {
 }
 
 export const isHoliday = (key: DateKey) => holidays(parseLocal(key).getFullYear()).has(key)
+
+export interface SalaryLine {
+  label: string
+  amount: number
+  kind: 'earning' | 'deduction'
+}
+
+export interface SalaryProjection {
+  /** Mês do talão (0-11) e ano. */
+  year: number
+  month: number
+  lines: SalaryLine[]
+  gross: number
+  deductions: number
+  net: number
+  /** Avisos (ex.: falta a taxa de IRS). */
+  notes: string[]
+}
+
+const r2 = (n: number) => Math.round(n * 100) / 100
+
+/**
+ * Projeção do talão de um mês: base + prémio + acréscimos e suplementar do mês anterior
+ * + subsídio de refeição dos dias trabalhados no mês anterior + subsídios de férias (junho) e de Natal (novembro).
+ * É uma estimativa: a retenção de IRS usa a taxa indicada pelo utilizador.
+ */
+export function projectSalary(data: AppData, payslipYear: number, payslipMonth: number, given = data.pay): SalaryProjection | undefined {
+  const base = monthlyBase(given)
+  if (!base || !given) return undefined
+  const settings = { ...defaultPaySettings(), ...given }
+  const work = workMonthForPayslip(payslipYear, payslipMonth)
+  const prem = premiumHours(data, work.year, work.month)
+  const est = estimatePay(prem, settings)
+  const lines: SalaryLine[] = [{ label: 'Remuneração base', amount: r2(base), kind: 'earning' }]
+  const bonusPct = settings.bonusPct ?? 0
+  if (bonusPct > 0 && !(settings.bonusSkipMonths ?? []).includes(payslipMonth)) {
+    lines.push({ label: `Prémio (${String(bonusPct).replace('.', ',')}% da base)`, amount: r2((base * bonusPct) / 100), kind: 'earning' })
+  }
+  if (payslipMonth === 5) lines.push({ label: 'Subsídio de férias', amount: r2(base), kind: 'earning' })
+  if (payslipMonth === 10) lines.push({ label: 'Subsídio de Natal', amount: r2(base), kind: 'earning' })
+  if (est && est.total > 0) lines.push({ label: 'Acréscimos (TN) e trabalho suplementar do mês anterior', amount: est.total, kind: 'earning' })
+  const notes: string[] = []
+  if (prem.missingDays.length) notes.push(`Faltam turnos em ${prem.missingDays.length} dias do mês anterior.`)
+  let meal = 0
+  if (settings.mealPerDay) {
+    const prefix = `${work.year}-${String(work.month + 1).padStart(2, '0')}-`
+    const days = data.shiftDays.filter((d) => d.date.startsWith(prefix) && findType(data.shiftTypes, d.code)?.work).length
+    meal = r2(days * settings.mealPerDay)
+    if (meal) lines.push({ label: `Subsídio de refeição (${days} dias)`, amount: meal, kind: 'earning' })
+  }
+  const gross = r2(lines.reduce((a, l) => a + l.amount, 0))
+  const taxable = gross - meal // refeição até ao limite legal não é tributada (simplificação)
+  const ded: SalaryLine[] = []
+  if (settings.socialPct) ded.push({ label: `Segurança Social / CGA (${String(settings.socialPct).replace('.', ',')}%)`, amount: r2((taxable * settings.socialPct) / 100), kind: 'deduction' })
+  // ADSE: sobre a base (e os subsídios de férias e Natal), não sobre acréscimos.
+  const adseBase = base * (payslipMonth === 5 || payslipMonth === 10 ? 2 : 1)
+  if (settings.adsePct) ded.push({ label: `ADSE (${String(settings.adsePct).replace('.', ',')}%)`, amount: r2((adseBase * settings.adsePct) / 100), kind: 'deduction' })
+  if (settings.irsPct) ded.push({ label: `IRS (${String(settings.irsPct).replace('.', ',')}%)`, amount: r2((taxable * settings.irsPct) / 100), kind: 'deduction' })
+  else notes.push('Sem taxa de IRS: indica-a em Definições para ver o líquido.')
+  const deductions = r2(ded.reduce((a, l) => a + l.amount, 0))
+  return { year: payslipYear, month: payslipMonth, lines: [...lines, ...ded], gross, deductions, net: r2(gross - deductions), notes }
+}

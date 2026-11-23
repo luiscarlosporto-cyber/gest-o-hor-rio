@@ -96,3 +96,22 @@ describe('junho de 2026 (horário final da UCIP) contra o talão de julho', () =
     expect(p.missingDays).toEqual([])
   })
 })
+
+describe('projeção do talão', () => {
+  it('soma base, prémio, acréscimos do mês anterior, refeição e desconta', async () => {
+    const { projectSalary } = await import('./payroll')
+    const pay = { category: 'Enfermeiro', position: 1, level: 19, weeklyHours: 35, municipalHolidays: ['11-11'], mealPerDay: 6, irsPct: 10 }
+    const data = { ...emptyData(), pay, shiftDays: [{ date: '2026-12-14', code: 'N' }, { date: '2026-12-15', code: 'D' }] }
+    const jan = projectSalary(data, 2027, 0)!
+    // base 1657,04 + prémio 14,28% (236,63) + TN 9h × 50% × 10,93 (49,19) + 1 dia de refeição (6)
+    expect(jan.lines.filter((l) => l.kind === 'earning').map((l) => l.amount)).toEqual([1657.04, 236.63, 49.19, 6])
+    expect(jan.gross).toBe(1948.86)
+    const taxable = 1948.86 - 6
+    expect(jan.deductions).toBeCloseTo(taxable * 0.11 + 1657.04 * 0.035 + taxable * 0.1, 1)
+    // junho: sem prémio, com subsídio de férias
+    const jun = projectSalary(data, 2027, 5)!
+    expect(jun.lines.map((l) => l.label)).toContain('Subsídio de férias')
+    expect(jun.lines.some((l) => l.label.startsWith('Prémio'))).toBe(false)
+    expect(projectSalary({ ...emptyData() }, 2027, 0)).toBeUndefined()
+  })
+})

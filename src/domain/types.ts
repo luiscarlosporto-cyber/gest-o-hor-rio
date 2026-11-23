@@ -99,6 +99,18 @@ export interface PaySettings {
   weeklyHours: number
   /** Feriados municipais, MM-DD (Penafiel: 11-11). */
   municipalHolidays: string[]
+  /** Prémio mensal em % da remuneração base (ex.: 14,28). */
+  bonusPct?: number
+  /** Meses (0-11) do talão em que o prémio não é pago (ex.: junho = 5). */
+  bonusSkipMonths?: number[]
+  /** Subsídio de refeição por dia de trabalho, em euros. */
+  mealPerDay?: number
+  /** Desconto para a Segurança Social/CGA, em % (normalmente 11). */
+  socialPct?: number
+  /** Desconto para a ADSE, em % da base (normalmente 3,5; 0 se não tiver). */
+  adsePct?: number
+  /** Taxa de retenção de IRS, em % (do talão). */
+  irsPct?: number
 }
 
 export interface AppData {
