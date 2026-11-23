@@ -11,7 +11,8 @@ export function onUpdateReady(fn: Listener) {
 }
 
 export function registerServiceWorker() {
-  if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return
+  // Na app Android os ficheiros já estão dentro da app: não é preciso service worker.
+  if (!import.meta.env.PROD || import.meta.env.MODE === 'android' || !('serviceWorker' in navigator)) return
   window.addEventListener('load', async () => {
     try {
       const reg = await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })

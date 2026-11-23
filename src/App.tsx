@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { LocalStore, type DataStore } from './data/store'
-import { signInWithGoogle, supabase } from './data/supabase'
+import { isNative, signInWithGoogle, supabase } from './data/supabase'
 import { useAppData } from './state/useAppData'
 import { useCloud } from './state/useCloud'
 import type { View } from './ui/CalendarPage'
@@ -10,7 +10,7 @@ import { GlobalSearch } from './ui/GlobalSearch'
 import { HomePage } from './ui/HomePage'
 import { pendingCount } from './domain/tasks'
 import { onUpdateReady } from './pwa'
-import { uploadReminders } from './data/push'
+import { scheduleOnDevice, uploadReminders } from './data/push'
 import { parseLocal } from './domain/dates'
 
 // Cada ecrã é carregado só quando é aberto (o Início vem logo no arranque).
@@ -122,6 +122,13 @@ export default function App({ store: injected }: { store?: DataStore }) {
     }, reminderSig.current ? 5000 : 500)
     return () => window.clearTimeout(t)
   }, [store, loaded, data])
+
+  // App Android: os lembretes ficam agendados no próprio telemóvel (funciona sem rede e sem conta).
+  useEffect(() => {
+    if (!isNative || !loaded) return
+    const t = window.setTimeout(() => scheduleOnDevice(data, data.reminders).catch(() => undefined), 1500)
+    return () => window.clearTimeout(t)
+  }, [loaded, data])
 
   // Abrir a partir de uma notificação: #dia/AAAA-MM-DD, #turnos/AAAA-MM-DD, #tarefas.
   useEffect(() => {

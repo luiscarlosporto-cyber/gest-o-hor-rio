@@ -2,13 +2,33 @@
 
 import { buildReminders, type ReminderSettings } from '../domain/reminders'
 import type { AppData } from '../domain/types'
-import { supabase } from './supabase'
+import { isNative, supabase } from './supabase'
+
+// Na app Android os lembretes são notificações do próprio telemóvel (src/native.ts).
+const native = () => import('../native')
+const OFF_KEY = 'gh-native-reminders-off'
+const nativeOff = () => {
+  try {
+    return localStorage.getItem(OFF_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+const setNativeOff = (off: boolean) => {
+  try {
+    if (off) localStorage.setItem(OFF_KEY, '1')
+    else localStorage.removeItem(OFF_KEY)
+  } catch {
+    /* sem armazenamento */
+  }
+}
 
 const VAPID = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined
 
 export type PushSupport = 'ok' | 'no-browser' | 'ios-install' | 'no-account'
 
 export function pushSupport(): PushSupport {
+  if (isNative) return 'ok'
   if (!supabase || !VAPID) return 'no-account'
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone
@@ -24,6 +44,7 @@ const toKey = (b64: string) => {
 
 /** Está ativo neste aparelho? */
 export async function deviceSubscribed(): Promise<boolean> {
+  if (isNative) return !nativeOff() && (await (await native()).nativePermission()) === 'granted'
   if (pushSupport() !== 'ok') return false
   const reg = await navigator.serviceWorker.getRegistration()
   return Boolean(await reg?.pushManager.getSubscription())
@@ -31,6 +52,11 @@ export async function deviceSubscribed(): Promise<boolean> {
 
 /** Pede autorização, subscreve e guarda o aparelho na conta. */
 export async function enableOnDevice(): Promise<void> {
+  if (isNative) {
+    if (!(await (await native()).requestNativePermission())) throw new Error('As notificações foram recusadas. Ativa-as em Definições do Android → Apps → Gestão Horário → Notificações.')
+    setNativeOff(false)
+    return
+  }
   if (pushSupport() !== 'ok' || !supabase) throw new Error('Este navegador não suporta notificações.')
   const perm = await Notification.requestPermission()
   if (perm !== 'granted') throw new Error('As notificações foram recusadas. Ativa-as nas definições do navegador para esta app.')
@@ -46,6 +72,11 @@ export async function enableOnDevice(): Promise<void> {
 }
 
 export async function disableOnDevice(): Promise<void> {
+  if (isNative) {
+    setNativeOff(true)
+    await (await native()).scheduleNative({ version: 1, events: [], shiftDays: [], shiftTypes: [], tasks: [] }, undefined)
+    return
+  }
   const reg = await navigator.serviceWorker.getRegistration()
   const sub = await reg?.pushManager.getSubscription()
   if (!sub) return
@@ -54,6 +85,10 @@ export async function disableOnDevice(): Promise<void> {
 }
 
 export async function sendTest(): Promise<{ devices: number; delivered: number }> {
+  if (isNative) {
+    await (await native()).testNative()
+    return { devices: 1, delivered: 1 }
+  }
   if (!supabase) throw new Error('Sem conta')
   const { data, error } = await supabase.functions.invoke<{ devices: number; delivered: number; error?: string }>('push', { body: { action: 'test' } })
   if (error || !data) throw new Error(data?.error ?? error?.message ?? 'Sem resposta')
@@ -68,4 +103,10 @@ export async function uploadReminders(data: AppData, settings: ReminderSettings 
   const { error } = await supabase.rpc('replace_reminders', { p_rows: rows })
   if (error) throw new Error(error.message)
   return rows.length
+}
+
+/** Na app Android: agenda no telemóvel os avisos dos próximos 14 dias (se estiverem ativos neste aparelho). */
+export async function scheduleOnDevice(data: AppData, settings: ReminderSettings | undefined): Promise<number> {
+  if (!isNative) return 0
+  return (await native()).scheduleNative(data, nativeOff() ? undefined : settings)
 }

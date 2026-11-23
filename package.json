@@ -11,6 +11,11 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "^8.0.5",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/local-notifications": "^8.3.1",
     "@supabase/supabase-js": "^2.119.2",
     "date-fns": "^4.4.0",
     "pdfjs-dist": "^6.5.438",
@@ -19,6 +24,7 @@
     "rrule": "^2.8.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
     "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^8.0.0",
     "@testing-library/react": "^16.3.3",

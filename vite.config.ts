@@ -2,10 +2,12 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 // Em produção a app vive em https://luiscarlosporto-cyber.github.io/gest-o-hor-rio/
-export default defineConfig(({ command, isPreview }) => ({
-  base: command === 'build' || isPreview ? '/gest-o-hor-rio/' : '/',
+// Na app Android (--mode android) os ficheiros vêm de dentro da app, com caminhos relativos.
+export default defineConfig(({ command, isPreview, mode }) => ({
+  base: mode === 'android' ? './' : command === 'build' || isPreview ? '/gest-o-hor-rio/' : '/',
   plugins: [react()],
   build: {
+    outDir: mode === 'android' ? 'dist-android' : 'dist',
     rolldownOptions: {
       output: {
         // Bibliotecas em ficheiros à parte: mudam pouco, ficam em cache entre versões da app.

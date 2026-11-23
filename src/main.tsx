@@ -11,3 +11,4 @@ createRoot(document.getElementById('root')!).render(
 )
 
 registerServiceWorker()
+if (import.meta.env.MODE === 'android') import('./native').then((m) => m.setupNative())
