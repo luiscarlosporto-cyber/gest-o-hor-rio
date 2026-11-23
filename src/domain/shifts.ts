@@ -14,8 +14,8 @@ export const DEFAULT_SHIFT_TYPES: ShiftType[] = [
   { code: 'DS', label: 'Descanso semanal', color: '#E2EFDA', work: false },
   { code: 'DC', label: 'Descanso complementar', color: '#E2EFDA', work: false },
   { code: 'F', label: 'Folga', color: '#E2EFDA', work: false },
-  { code: 'Fe', label: 'Férias', color: '#D9D9D9', work: false },
-  { code: 'L', label: 'Licença', color: '#D9D9D9', work: false },
+  { code: 'Fe', label: 'Feriado', color: '#D9D9D9', work: false },
+  { code: 'L', label: 'Férias', color: '#A9D08E', work: false },
 ]
 
 export function findType(types: ShiftType[], code: string): ShiftType | undefined {
