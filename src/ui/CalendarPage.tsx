@@ -9,6 +9,7 @@ import {
   formatMonthYear,
   formatRange,
   monthGrid,
+  parseLocal,
   startOfDay,
   startOfWeek,
   timeOf,
@@ -29,6 +30,7 @@ import { mergeShiftDays } from '../domain/shifts'
 import { CATEGORIES, type AppData, type Occurrence } from '../domain/types'
 import { EventEditor, type EditorTarget } from './EventEditor'
 import { MonthView } from './MonthView'
+import { ScheduleImport } from './ScheduleImport'
 import { TimeGrid } from './TimeGrid'
 
 export type View = 'day' | 'week' | 'month'
@@ -64,6 +66,7 @@ const FILTERS = [{ id: 'turno', label: 'Turnos' }, ...CATEGORIES]
 export function CalendarPage({ data, update, cursor, setCursor, view, setView }: Props) {
   const [editor, setEditor] = useState<EditorTarget | null>(null)
   const [quick, setQuick] = useState('')
+  const [pasting, setPasting] = useState(false)
   const [shiftPick, setShiftPick] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [filters, setFilters] = useState<string[]>([])
@@ -96,7 +99,7 @@ export function CalendarPage({ data, update, cursor, setCursor, view, setView }:
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement
-      if (editor || shiftPick || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || e.metaKey || e.ctrlKey) return
+      if (editor || shiftPick || pasting || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || e.metaKey || e.ctrlKey) return
       if (e.key === 'ArrowLeft') step(-1)
       else if (e.key === 'ArrowRight') step(1)
       else if (e.key === 't') setCursor(new Date())
@@ -107,7 +110,7 @@ export function CalendarPage({ data, update, cursor, setCursor, view, setView }:
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editor, shiftPick, step, setCursor, setView, cursor])
+  }, [editor, shiftPick, pasting, step, setCursor, setView, cursor])
 
   const open = (o: Occurrence) => {
     if (o.source === 'shift' && o.shiftDate) return setShiftPick(o.shiftDate)
@@ -202,6 +205,9 @@ export function CalendarPage({ data, update, cursor, setCursor, view, setView }:
         />
         <button className="btn btn-primary" type="submit" disabled={!quick.trim()}>
           Criar
+        </button>
+        <button className="btn" type="button" onClick={() => setPasting(true)}>
+          Colar lista
         </button>
       </form>
 
@@ -304,6 +310,17 @@ export function CalendarPage({ data, update, cursor, setCursor, view, setView }:
 
       {editor && (
         <EventEditor target={editor} others={occurrencesIn(data, addDays(from, -7), addDays(to, 7))} onSave={save} onDelete={remove} onClose={() => setEditor(null)} />
+      )}
+      {pasting && (
+        <ScheduleImport
+          data={data}
+          onClose={() => setPasting(false)}
+          onSave={(drafts) => {
+            update((d) => ({ ...d, events: drafts.reduce(upsertEvent, d.events) }))
+            setPasting(false)
+            if (drafts[0]) setCursor(parseLocal(drafts[0].start))
+          }}
+        />
       )}
       {shiftPick && (
         <ShiftPicker

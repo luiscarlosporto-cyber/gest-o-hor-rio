@@ -270,3 +270,14 @@ input:not([type='checkbox']):not([type='radio']):not([type='range']), select, te
 .shift-cell { background: color-mix(in srgb, var(--chip, transparent) 16%, var(--panel)); box-shadow: inset 4px 0 0 var(--chip, transparent); }
 .shift-cell.is-outside { box-shadow: none; }
 .shift-cell .shift-cell-day .muted { color: var(--text); font-weight: 400; }
+
+/* Colar lista de horários */
+.schedule-import { width: min(560px, 100%); }
+.schedule-import textarea { width: 100%; font: inherit; resize: vertical; }
+.schedule-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.schedule-rows li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: var(--radius-sm, 10px); background: var(--bg); }
+.schedule-rows li.is-warn { box-shadow: inset 3px 0 0 var(--shift-afternoon, #f07f63); }
+.schedule-rows label { display: flex; gap: 8px; align-items: center; }
+.schedule-clash { color: var(--text); font-weight: 600; }
+/* A lupa flutuante não fica por cima das janelas abertas. */
+body:has(.modal-backdrop, .more-sheet-backdrop) .global-search-btn { display: none; }

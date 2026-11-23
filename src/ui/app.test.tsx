@@ -48,6 +48,27 @@ describe('app', () => {
     expect(store.data.events[0]).toMatchObject({ title: 'Dentista', category: 'pessoal', start: '2026-11-27T10:00', end: '2026-11-27T11:00', location: 'Penafiel' })
   })
 
+  it('cola a SMS do ginásio: mostra conflitos com turnos, salta repetidos e só grava ao confirmar', async () => {
+    const existing = { id: 'e1', title: 'Treino', start: '2026-11-24T16:00', end: '2026-11-24T17:00', allDay: false, category: 'pessoal' as const, createdAt: '', updatedAt: '' }
+    const store = new MemoryStore({ ...emptyData(), events: [existing], shiftDays: [{ date: '2026-11-26', code: 'T' }] })
+    const user = userEvent.setup()
+    render(<App store={store} />)
+    await user.click(within(await screen.findByRole('navigation')).getByRole('button', { name: 'Calendário' }))
+    await user.click(await screen.findByRole('button', { name: 'Colar lista' }))
+    const dialog = screen.getByRole('dialog', { name: 'Colar lista de horários' })
+    await user.click(within(dialog).getByLabelText('Texto com os horários'))
+    await user.paste('Ola\nTreinos de 11/2026:\n24/11 16h\n26/11 15h\n30/11 16h\nPara reagendar contacte 910000000')
+    expect(within(dialog).getByText('Já está na agenda')).toBeInTheDocument()
+    expect(within(dialog).getByText('Coincide com o turno T')).toBeInTheDocument()
+    expect(store.data.events).toHaveLength(1)
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar 2 sessões' }))
+    await waitFor(() => expect(store.data.events).toHaveLength(3))
+    expect(store.data.events.slice(1).map((e) => [e.title, e.start, e.end])).toEqual([
+      ['Treino', '2026-11-26T15:00', '2026-11-26T16:00'],
+      ['Treino', '2026-11-30T16:00', '2026-11-30T17:00'],
+    ])
+  })
+
   it('cria um evento a partir do botão Novo e grava-o', async () => {
     const store = new MemoryStore()
     const user = userEvent.setup()
