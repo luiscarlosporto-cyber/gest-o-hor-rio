@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { addMonths, daysInMonth, formatMonthYear, monthGrid, toDateKey, weekdayShort } from '../domain/dates'
 import { mergeShiftDays, parseRosterLine, summarizeMonth, findType, type RosterParseResult } from '../domain/shifts'
 import type { AppData, ShiftDay, ShiftType } from '../domain/types'
+import { SisqualImport } from './SisqualImport'
 
 interface Props {
   data: AppData
@@ -66,6 +67,8 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
       <div className="shifts-layout">
         <section className="card">
           <h2>Carregar o mês</h2>
+          <SisqualImport data={data} update={update} onApplied={setCursor} />
+          <h3>Ou colar a linha</h3>
           <p className="muted">
             Cola a tua linha do horário (por exemplo copiada do PDF SISQUAL), com um código por dia. Vês o resultado antes de gravar.
           </p>

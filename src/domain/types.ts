@@ -85,6 +85,8 @@ export interface Occurrence {
 
 /** Dados para calcular o vencimento. Só ficam na conta do utilizador. */
 export interface PaySettings {
+  /** Número mecanográfico (para encontrar a linha no horário do SISQUAL). */
+  employeeNumber?: string
   /** Categoria (texto livre; ex.: Enfermeiro, Enfermeiro especialista). */
   category: string
   /** Posição remuneratória na categoria (1, 2, 3…). */
