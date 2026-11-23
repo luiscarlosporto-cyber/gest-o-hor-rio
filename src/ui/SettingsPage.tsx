@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
 import { exportJson, importJson, type DataStore } from '../data/store'
 import { signInWithGoogle, supabase } from '../data/supabase'
-import type { AppData } from '../domain/types'
+import { CATEGORIES_ENF, defaultPaySettings, hourlyRate, monthlyBase, TRU_2026 } from '../domain/payroll'
+import type { AppData, PaySettings } from '../domain/types'
 import type { useCloud } from '../state/useCloud'
 
 export type Theme = 'system' | 'light' | 'dark'
@@ -44,6 +45,7 @@ export function SettingsPage({ data, store, theme, setTheme, update, cloud }: Pr
         <h1 className="toolbar-title">Definições</h1>
       </header>
       {supabase && cloud && <GoogleCard cloud={cloud} />}
+      <PayCard pay={data.pay} onChange={(pay) => update((d) => ({ ...d, pay }))} />
       <section className="card">
         <h2>Aspeto</h2>
         <div className="seg seg-compact" role="radiogroup" aria-label="Tema">
@@ -151,6 +153,90 @@ function GoogleCard({ cloud }: { cloud: ReturnType<typeof useCloud> }) {
         </>
       )}
       {err && <div className="error">{err}</div>}
+    </section>
+  )
+}
+
+const euro = (n: number) => n.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })
+
+function PayCard({ pay, onChange }: { pay?: PaySettings; onChange: (p: PaySettings) => void }) {
+  const p = pay ?? defaultPaySettings()
+  const set = (patch: Partial<PaySettings>) => onChange({ ...p, ...patch })
+  const base = monthlyBase(p)
+  const custom = !CATEGORIES_ENF.includes(p.category as (typeof CATEGORIES_ENF)[number])
+  return (
+    <section className="card" aria-labelledby="s-pay">
+      <h2 id="s-pay">Vencimento</h2>
+      <p className="small muted">Serve para o relatório estimar em euros os acréscimos e o trabalho suplementar. Fica só na tua conta.</p>
+      <div className="pay-form">
+        <label className="field">
+          <span>Categoria</span>
+          <select value={custom ? '' : p.category} onChange={(e) => set({ category: e.target.value || 'Outra' })}>
+            {CATEGORIES_ENF.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+            <option value="">Outra…</option>
+          </select>
+        </label>
+        {custom && (
+          <label className="field">
+            <span>Qual categoria</span>
+            <input value={p.category === 'Outra' ? '' : p.category} onChange={(e) => set({ category: e.target.value || 'Outra' })} />
+          </label>
+        )}
+        <label className="field">
+          <span>Nível remuneratório (escalão)</span>
+          <select value={p.level ?? ''} onChange={(e) => set({ level: e.target.value ? Number(e.target.value) : undefined })}>
+            <option value="">Escolher…</option>
+            {Object.entries(TRU_2026).map(([lvl, val]) => (
+              <option key={lvl} value={lvl}>
+                Nível {lvl} · {euro(val)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Remuneração base (se for diferente)</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0"
+            value={p.monthly ?? ''}
+            placeholder={p.level ? String(TRU_2026[p.level]) : ''}
+            onChange={(e) => set({ monthly: e.target.value ? Number(e.target.value) : undefined })}
+          />
+        </label>
+        <label className="field">
+          <span>Horas por semana</span>
+          <input type="number" min="1" max="60" value={p.weeklyHours} onChange={(e) => set({ weeklyHours: Number(e.target.value) || 35 })} />
+        </label>
+        <label className="field">
+          <span>Feriado municipal (dia-mês)</span>
+          <input
+            value={p.municipalHolidays.map((md) => md.split('-').reverse().join('/')).join(', ')}
+            placeholder="11/11"
+            onChange={(e) =>
+              set({
+                municipalHolidays: e.target.value
+                  .split(/[,;\s]+/)
+                  .map((x) => x.match(/^(\d{1,2})[/-](\d{1,2})$/))
+                  .filter((m): m is RegExpMatchArray => Boolean(m))
+                  .map((m) => `${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`),
+              })
+            }
+          />
+        </label>
+      </div>
+      {base ? (
+        <p className="small">
+          Valor/hora (R): <strong>{euro(hourlyRate(base, p.weeklyHours))}</strong> · base {euro(base)}
+        </p>
+      ) : (
+        <p className="small muted">Escolhe o nível para ver o valor/hora.</p>
+      )}
     </section>
   )
 }

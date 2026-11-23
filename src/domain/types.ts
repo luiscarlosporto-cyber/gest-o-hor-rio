@@ -57,6 +57,8 @@ export interface ShiftType {
 export interface ShiftDay {
   date: DateKey
   code: string
+  /** Turno extra (trabalho suplementar, a verde no horário SISQUAL). */
+  extra?: boolean
 }
 
 /** Uma ocorrência concreta, pronta a mostrar e a comparar. */
@@ -76,10 +78,25 @@ export interface Occurrence {
   location?: string
 }
 
+/** Dados para calcular o vencimento. Só ficam na conta do utilizador. */
+export interface PaySettings {
+  /** Categoria (texto livre; ex.: Enfermeiro, Enfermeiro especialista). */
+  category: string
+  /** Nível remuneratório da TRU (ex.: 34). */
+  level?: number
+  /** Remuneração base mensal em euros; se vazio, usa a do nível. */
+  monthly?: number
+  /** Horas semanais (normalmente 35). */
+  weeklyHours: number
+  /** Feriados municipais, MM-DD (Penafiel: 11-11). */
+  municipalHolidays: string[]
+}
+
 export interface AppData {
   version: 1
   events: CalendarEvent[]
   shiftDays: ShiftDay[]
   shiftTypes: ShiftType[]
   tasks: Task[]
+  pay?: PaySettings
 }

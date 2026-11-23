@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { emptyData } from '../data/store'
-import { monthReport, reportCsv, todayOverview, fmtHours } from './reports'
+import { isNightExit, monthReport, reportCsv, todayOverview, fmtHours } from './reports'
 import { addTask } from './tasks'
 import type { AppData } from './types'
 
@@ -29,7 +29,7 @@ describe('painel de hoje', () => {
     expect(o.agenda.map((a) => a.title)).toEqual(['MT2', 'Dentista'])
     expect(o.conflicts).toBe(1) // dentista durante o MT2
     expect(o.week[0]).toMatchObject({ date: '2026-11-23', shift: { code: 'MT2', work: true }, events: 1 })
-    expect(o.nextDayOff).toBe('2026-11-26')
+    expect(o.nextDayOff).toBeUndefined() // os dois D vêm a seguir a noites: são saídas da noite
   })
   it('calcula o descanso entre turnos quando não está a trabalhar', () => {
     const now = new Date(2026, 10, 22, 12, 0) // domingo, depois da noite de sábado
@@ -37,6 +37,15 @@ describe('painel de hoje', () => {
     expect(o.currentShift).toBeUndefined()
     expect(o.nextShift?.title).toBe('MT2')
     expect(o.restMinutes).toBe(23.5 * 60) // N acaba dom 09:00, MT2 começa seg 08:30
+  })
+})
+
+describe('saída da noite', () => {
+  it('um D a seguir à N não é folga, um D a seguir a outro D é', () => {
+    const d: AppData = { ...data(), shiftDays: [{ date: '2026-11-25', code: 'N' }, { date: '2026-11-26', code: 'D' }, { date: '2026-11-27', code: 'D' }] }
+    expect(isNightExit(d, '2026-11-26')).toBe(true)
+    expect(isNightExit(d, '2026-11-27')).toBe(false)
+    expect(todayOverview(d, new Date(2026, 10, 25, 12)).nextDayOff).toBe('2026-11-27')
   })
 })
 
@@ -49,8 +58,10 @@ describe('relatório mensal', () => {
     expect(r.deltaMinutes).toBe((43 - 7) * 60)
     expect(r.nights).toBe(2)
     expect(r.weekendsWorked).toBe(1)
-    expect(r.daysOff).toBe(2)
-    expect(r.longestStreak).toBe(3)
+    expect(r.daysOff).toBe(0)
+    expect(r.nightExits).toBe(2)
+    expect(r.days.find((x) => x.date === '2026-11-22')).toMatchObject({ nightExit: true, label: 'Saída da noite' })
+    expect(r.longestStreak).toBe(6) // N sáb, D (saída), MT2, M, N, D (saída)
     expect(r.eventMinutes.pessoal).toBe(60)
     expect(r.tasksCreated).toBe(1)
     expect(r.weeks.find((w) => w.start === '2026-11-23')?.minutes).toBe((14 + 7 + 11) * 60)

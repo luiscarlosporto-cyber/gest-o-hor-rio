@@ -20,11 +20,14 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
   const [preview, setPreview] = useState<RosterParseResult | null>(null)
 
   const byDate = useMemo(() => new Map(data.shiftDays.map((d) => [d.date, d.code])), [data.shiftDays])
+  const extras = useMemo(() => new Set(data.shiftDays.filter((d) => d.extra).map((d) => d.date)), [data.shiftDays])
   const summary = useMemo(() => summarizeMonth(data.shiftDays, data.shiftTypes, year, month), [data, year, month])
   const grid = monthGrid(cursor)
 
   const setDay = (date: string, code: string) =>
-    update((d) => ({ ...d, shiftDays: mergeShiftDays(d.shiftDays, [{ date, code }]) }))
+    update((d) => ({ ...d, shiftDays: mergeShiftDays(d.shiftDays, [extras.has(date) ? { date, code, extra: true } : { date, code }]) }))
+  const toggleExtra = (date: string) =>
+    update((d) => ({ ...d, shiftDays: d.shiftDays.map((s) => (s.date !== date ? s : s.extra ? { date: s.date, code: s.code } : { ...s, extra: true })) }))
 
   const doPreview = () => setPreview(parseRosterLine(paste, year, month, data.shiftTypes, { skipFirst: skipFirst ? 1 : 0 }))
 
@@ -176,6 +179,20 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
                   ))}
                   {code && !type && <option value={code}>{code}</option>}
                 </select>
+                {type?.work && (
+                  <button
+                    type="button"
+                    className={`shift-extra${extras.has(key) ? ' is-on' : ''}`}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      toggleExtra(key)
+                    }}
+                    aria-pressed={extras.has(key)}
+                    title="Turno extra (trabalho suplementar)"
+                  >
+                    Extra
+                  </button>
+                )}
               </label>
             )
           })}

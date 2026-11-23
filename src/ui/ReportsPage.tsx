@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { addMonths, formatMonthYear, parseLocal, weekdayShort } from '../domain/dates'
-import { premiumHours } from '../domain/payroll'
+import { estimatePay, premiumHours } from '../domain/payroll'
 import { fmtHours, monthReport, reportCsv } from '../domain/reports'
 import { CATEGORIES, type AppData } from '../domain/types'
 
@@ -15,6 +15,10 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
   const month = cursor.getMonth()
   const r = useMemo(() => monthReport(data, year, month), [data, year, month])
   const pay = useMemo(() => premiumHours(data, year, month), [data, year, month])
+  const est = useMemo(() => estimatePay(pay, data.pay), [pay, data.pay])
+  const ex = pay.extra
+  const extraHours = ex.dayWeekday.first + ex.dayWeekday.next + ex.nightWeekdayOrDayRest.first + ex.nightWeekdayOrDayRest.next + ex.nightRest.first + ex.nightRest.next
+  const euro = (n: number) => n.toLocaleString('pt-PT', { style: 'currency', currency: 'EUR' })
   const payslip = formatMonthYear(addMonths(cursor, 1))
   const dec = (h: number) => h.toFixed(2).replace('.', ',')
   const [showDays, setShowDays] = useState(false)
@@ -54,7 +58,7 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
 
       <div className="stats">
         <Stat label="Horas de turno" value={fmtHours(r.summary.workedMinutes)} note={r.deltaMinutes ? `${r.deltaMinutes > 0 ? '+' : ''}${fmtHours(r.deltaMinutes)} que no mês anterior` : 'igual ao mês anterior'} />
-        <Stat label="Dias de trabalho" value={String(r.summary.workDays)} note={`${r.daysOff} de folga ou descanso`} />
+        <Stat label="Dias de trabalho" value={String(r.summary.workDays)} note={`${r.nightExits ? `${r.nightExits} ${r.nightExits === 1 ? 'saída' : 'saídas'} da noite, ` : ''}${r.daysOff} de folga ou descanso`} />
         <Stat label="Noites" value={String(r.nights)} note={`${r.weekendsWorked} dias de fim de semana`} />
         <Stat label="Seguidos, no máximo" value={`${r.longestStreak} ${r.longestStreak === 1 ? 'dia' : 'dias'}`} note="de trabalho sem folga" />
       </div>
@@ -127,8 +131,8 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
       <section className="card" aria-labelledby="r-pay">
         <h2 id="r-pay">Para conferir o vencimento</h2>
         <p className="small muted">
-          Horas deste mês com acréscimo, com os nomes do talão. São pagas no talão de <strong>{payslip.toLowerCase()}</strong>. Noturno das 20h às 8h; sábado depois das 13h, domingos e
-          feriados (nacionais e São Martinho). Não inclui trabalho suplementar.
+          Horas deste mês com acréscimo, com os nomes do talão. São pagas no talão de <strong>{payslip.toLowerCase()}</strong>. Noturno das 20h às 8h; sábado depois das 13h (noturno de sábado só depois das 20h), domingos e
+          feriados (nacionais e municipal). Os turnos marcados como extra contam como trabalho suplementar.
         </p>
         <table className="report-table pay-table">
           <tbody>
@@ -144,12 +148,58 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
               <th scope="row">TN sábado, domingo e feriado, noturno</th>
               <td className="num">{dec(pay.weekendNight)} h</td>
             </tr>
+            {extraHours > 0 && (
+              <>
+                <tr>
+                  <th scope="row">Suplementar diurno em dia útil (1.ª hora / seguintes)</th>
+                  <td className="num">
+                    {dec(ex.dayWeekday.first)} / {dec(ex.dayWeekday.next)} h
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Suplementar noturno útil ou diurno sáb. &gt;13h, dom. e feriado</th>
+                  <td className="num">
+                    {dec(ex.nightWeekdayOrDayRest.first)} / {dec(ex.nightWeekdayOrDayRest.next)} h
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Suplementar noturno sáb. &gt;20h, dom. e feriado</th>
+                  <td className="num">
+                    {dec(ex.nightRest.first)} / {dec(ex.nightRest.next)} h
+                  </td>
+                </tr>
+              </>
+            )}
             <tr>
               <th scope="row">Total de horas de turno</th>
               <td className="num">{dec(pay.total)} h</td>
             </tr>
           </tbody>
         </table>
+        {est ? (
+          <>
+            <h3 className="pay-sub">Estimativa em euros (R = {euro(est.rate)}/h)</h3>
+            <table className="report-table pay-table">
+              <tbody>
+                {est.lines.map((l) => (
+                  <tr key={l.label}>
+                    <th scope="row">{l.label}</th>
+                    <td className="num">{euro(l.amount)}</td>
+                  </tr>
+                ))}
+                <tr>
+                  <th scope="row">Total de acréscimos e suplementar</th>
+                  <td className="num">
+                    <strong>{euro(est.total)}</strong>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="small muted">Valores brutos, antes de descontos. Pode haver diferenças de arredondamento face ao talão.</p>
+          </>
+        ) : (
+          <p className="small muted">Para ver os valores em euros, escolhe o teu nível remuneratório em Definições.</p>
+        )}
         {pay.missingDays.length > 0 && (
           <p className="small pay-warn">
             Faltam turnos em {pay.missingDays.length} {pay.missingDays.length === 1 ? 'dia' : 'dias'} ({pay.missingDays.map((d) => parseLocal(d).getDate()).join(', ')}). Preenche-os em Turnos para o cálculo
@@ -190,6 +240,7 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
                     <td>
                       {d.code ?? '–'}
                       {d.label && <span className="muted"> · {d.label}</span>}
+                      {d.extra && <span className="extra-pill">extra</span>}
                     </td>
                     <td className="num">{d.workMinutes ? fmtHours(d.workMinutes) : ''}</td>
                     <td className="num">{d.events || ''}</td>

@@ -8,6 +8,7 @@ import type { DateKey, Occurrence, ShiftDay, ShiftType } from './types'
 export const DEFAULT_SHIFT_TYPES: ShiftType[] = [
   { code: 'MT2', label: 'Manhã e tarde', start: '08:30', end: '22:30', color: '#F4B183', work: true },
   { code: 'M', label: 'Manhã', start: '08:30', end: '15:30', color: '#FFE699', work: true },
+  { code: 'T', label: 'Tarde', start: '15:00', end: '22:30', color: '#F8CBAD', work: true },
   { code: 'N', label: 'Noite', start: '22:00', end: '09:00', color: '#8EA9DB', work: true },
   { code: 'D', label: 'Descanso', color: '#C6E0B4', work: false },
   { code: 'DS', label: 'Descanso semanal', color: '#E2EFDA', work: false },

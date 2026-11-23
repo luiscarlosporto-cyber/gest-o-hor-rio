@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { DEFAULT_SHIFT_TYPES } from '../domain/shifts'
 import type { Task } from '../domain/tasks'
-import type { AppData, CalendarEvent, ShiftDay, ShiftType } from '../domain/types'
+import type { AppData, CalendarEvent, PaySettings, ShiftDay, ShiftType } from '../domain/types'
 import type { DataStore } from './store'
 
 interface EventRow {
@@ -146,13 +146,14 @@ export class SupabaseStore implements DataStore {
   }
 
   async load(): Promise<AppData> {
-    const [ev, sd, st, tk] = await Promise.all([
+    const [ev, sd, st, tk, pr] = await Promise.all([
       this.db.from('events').select('*').is('deleted_at', null),
-      this.db.from('shift_days').select('day, code').is('deleted_at', null),
+      this.db.from('shift_days').select('day, code, extra').is('deleted_at', null),
       this.db.from('shift_types').select('*').order('sort_order'),
       this.db.from('tasks').select('*'),
+      this.db.from('profiles').select('pay_settings').eq('id', this.userId).maybeSingle(),
     ])
-    for (const r of [ev, sd, st, tk]) if (r.error) throw new Error(r.error.message)
+    for (const r of [ev, sd, st, tk, pr]) if (r.error) throw new Error(r.error.message)
     const types = (st.data as ShiftTypeRow[]).map<ShiftType>((t) => ({
       code: t.code,
       label: t.label,
@@ -164,9 +165,10 @@ export class SupabaseStore implements DataStore {
     const data: AppData = {
       version: 1,
       events: (ev.data as EventRow[]).map(rowToEvent),
-      shiftDays: (sd.data as { day: string; code: string }[]).map<ShiftDay>((r) => ({ date: r.day, code: r.code })),
+      shiftDays: (sd.data as { day: string; code: string; extra?: boolean }[]).map<ShiftDay>((r) => (r.extra ? { date: r.day, code: r.code, extra: true } : { date: r.day, code: r.code })),
       shiftTypes: types.length ? types : DEFAULT_SHIFT_TYPES,
       tasks: ((tk.data ?? []) as TaskRow[]).map(rowToTask),
+      pay: (pr.data as { pay_settings?: PaySettings | null } | null)?.pay_settings ?? undefined,
     }
     this.last = data
     return data
@@ -196,14 +198,28 @@ export class SupabaseStore implements DataStore {
     if (removed.length) await check(this.db.from('events').update({ deleted_at: now, dirty: true }).in('id', removed))
 
     // Turnos
-    const prevSd = new Map(prev.shiftDays.map((d) => [d.date, d.code]))
-    const nextSd = new Map(next.shiftDays.map((d) => [d.date, d.code]))
-    const sdChanged = next.shiftDays
-      .filter((d) => prevSd.get(d.date) !== d.code)
-      .map((d) => ({ user_id: uid, day: d.date, code: d.code, dirty: true, deleted_at: null }))
+    const sig = (d: ShiftDay) => `${d.code}${d.extra ? '+' : ''}`
+    const prevSd = new Map(prev.shiftDays.map((d) => [d.date, sig(d)]))
+    const nextSd = new Map(next.shiftDays.map((d) => [d.date, sig(d)]))
+    const prevCode = (date: string) => prevSd.get(date)?.replace(/\+$/, '')
+    const touched = next.shiftDays.filter((d) => prevSd.get(d.date) !== sig(d))
+    // Mudou o código: vai para o Google. Só mudou a marca de extra: fica na app.
+    const sdChanged = touched
+      .filter((d) => prevCode(d.date) !== d.code)
+      .map((d) => ({ user_id: uid, day: d.date, code: d.code, extra: Boolean(d.extra), dirty: true, deleted_at: null }))
+    const extraOnly = touched.filter((d) => prevCode(d.date) === d.code)
     const sdRemoved = prev.shiftDays.filter((d) => !nextSd.has(d.date)).map((d) => d.date)
     if (sdChanged.length) await check(this.db.from('shift_days').upsert(sdChanged))
+    for (const on of [true, false]) {
+      const days = extraOnly.filter((d) => Boolean(d.extra) === on).map((d) => d.date)
+      if (days.length) await check(this.db.from('shift_days').update({ extra: on }).eq('user_id', uid).in('day', days))
+    }
     if (sdRemoved.length) await check(this.db.from('shift_days').update({ deleted_at: now, dirty: true }).eq('user_id', uid).in('day', sdRemoved))
+
+    // Dados de vencimento (perfil)
+    if (JSON.stringify(prev.pay) !== JSON.stringify(next.pay)) {
+      await check(this.db.from('profiles').update({ pay_settings: next.pay ?? null }).eq('id', uid))
+    }
 
     // Tipos de turno (não vão para o Google)
     if (JSON.stringify(prev.shiftTypes) !== JSON.stringify(next.shiftTypes)) {

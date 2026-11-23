@@ -14,7 +14,7 @@ function fakeDb(tables: Record<string, unknown[]>) {
       call.filters.push(`${name}:${JSON.stringify(args)}`)
       return api
     }
-    for (const f of ['eq', 'in', 'is', 'order']) api[f] = chain(f)
+    for (const f of ['eq', 'in', 'is', 'order', 'maybeSingle']) api[f] = chain(f)
     api.select = () => api
     api.upsert = (p: unknown) => ((call.op = 'upsert'), (call.payload = p), api)
     api.update = (p: unknown) => ((call.op = 'update'), (call.payload = p), api)
@@ -78,5 +78,16 @@ describe('SupabaseStore', () => {
     expect(calls[1].payload).toMatchObject({ dirty: true })
     expect(calls[1].filters).toContain('in:["id",["b"]]')
     expect(calls[3].filters).toContain('in:["day",["2026-11-23"]]')
+  })
+
+  it('marcar um turno como extra ou mudar o vencimento não vai para o Google', async () => {
+    const { db, calls } = fakeDb({ events: [], shift_days: [{ day: '2026-11-24', code: 'N' }], shift_types: [] })
+    const store = new SupabaseStore(db, 'u1')
+    const data = await store.load()
+    calls.length = 0
+    await store.save({ ...data, shiftDays: [{ date: '2026-11-24', code: 'N', extra: true }], pay: { category: 'Enfermeiro', level: 34, weeklyHours: 35, municipalHolidays: ['11-11'] } })
+    expect(calls.map((c) => `${c.table}.${c.op}`)).toEqual(['shift_days.update', 'profiles.update'])
+    expect(calls[0].payload).toEqual({ extra: true })
+    expect(calls[1].payload).toMatchObject({ pay_settings: { level: 34 } })
   })
 })

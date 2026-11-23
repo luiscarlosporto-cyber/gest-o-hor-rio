@@ -267,6 +267,8 @@ h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
 .shift-cell { border: 1px solid var(--line); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px; background: color-mix(in srgb, var(--chip, transparent) 45%, var(--panel)); }
 .shift-cell.is-outside { opacity: 0.4; }
 .shift-cell-day { font-size: 12px; font-weight: 600; }
+.shift-extra { align-self: flex-start; font-size: 11px; line-height: 1; padding: 3px 6px; border-radius: 999px; border: 1px dashed var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.shift-extra.is-on { border: 1px solid #2e7d32; background: #2e7d32; color: #fff; }
 .shift-cell select { border: 0; background: transparent; font-weight: 600; padding: 2px 0; width: 100%; }
 .table-wrap { overflow-x: auto; }
 .table { border-collapse: collapse; width: 100%; }
@@ -422,3 +424,7 @@ kbd { font-family: inherit; font-size: 12px; border: 1px solid var(--line); bord
   .nav-badge { position: absolute; top: 0; right: 4px; min-width: 16px; height: 16px; font-size: 10px; padding: 0 4px; }
   .task-editor { padding-left: 12px; }
 }
+
+.pay-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 8px 0; }
+.pay-sub { font-size: 14px; margin: 14px 0 4px; }
+.extra-pill { margin-left: 6px; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: #2e7d32; color: #fff; }

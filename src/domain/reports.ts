@@ -31,6 +31,20 @@ export interface TodayOverview {
   conflicts: number
 }
 
+/**
+ * Dia de "saída da noite": o dia sem turno (ex.: D) a seguir a uma noite que passa a meia-noite.
+ * Não é folga: ainda se trabalha da meia-noite até ao fim da noite (ex.: 00h–09h).
+ */
+export function isNightExit(data: AppData, key: DateKey): boolean {
+  const sd = data.shiftDays.find((s) => s.date === key)
+  const type = sd ? findType(data.shiftTypes, sd.code) : undefined
+  if (type?.work) return false
+  const prevKey = toDateKey(addDays(parseLocal(key), -1))
+  const prev = data.shiftDays.find((s) => s.date === prevKey)
+  const pt = prev ? findType(data.shiftTypes, prev.code) : undefined
+  return Boolean(pt?.work && pt.start && pt.end && pt.end <= pt.start && pt.end > '00:00')
+}
+
 const isWorkShift = (o: Occurrence) => o.source === 'shift' && !o.transparent
 
 export function todayOverview(data: AppData, now: Date): TodayOverview {
@@ -62,7 +76,7 @@ export function todayOverview(data: AppData, now: Date): TodayOverview {
     const key = toDateKey(addDays(today, i))
     const sd = data.shiftDays.find((s) => s.date === key)
     const type = sd ? findType(data.shiftTypes, sd.code) : undefined
-    if (sd && !type?.work) {
+    if (sd && !type?.work && !isNightExit(data, key)) {
       nextDayOff = key
       break
     }
@@ -90,6 +104,10 @@ export interface ReportDay {
   label?: string
   workMinutes: number
   night: boolean
+  /** Dia a seguir a uma noite: ainda se trabalha de madrugada, não é folga. */
+  nightExit: boolean
+  /** Turno extra (suplementar). */
+  extra: boolean
   weekend: boolean
   events: number
 }
@@ -103,6 +121,8 @@ export interface MonthReport {
   nights: number
   weekendsWorked: number
   daysOff: number
+  /** Dias de saída da noite (contam como trabalho, não como folga). */
+  nightExits: number
   /** Maior sequência de dias seguidos com turno de trabalho. */
   longestStreak: number
   /** Horas de turno por semana (segunda a domingo) que toca o mês. */
@@ -140,6 +160,7 @@ export function monthReport(data: AppData, year: number, month: number): MonthRe
   let nights = 0
   let weekendsWorked = 0
   let daysOff = 0
+  let nightExits = 0
   let streak = 0
   let longestStreak = 0
   for (let d = 1; d <= daysInMonth(year, month); d++) {
@@ -150,15 +171,19 @@ export function monthReport(data: AppData, year: number, month: number): MonthRe
     const night = Boolean(type?.work && isNight(type))
     if (night) nights++
     if (type?.work && weekend) weekendsWorked++
-    if (sd && !type?.work) daysOff++
-    streak = type?.work ? streak + 1 : 0
+    const nightExit = isNightExit(data, key)
+    if (nightExit) nightExits++
+    else if (sd && !type?.work) daysOff++
+    streak = type?.work || nightExit ? streak + 1 : 0
     longestStreak = Math.max(longestStreak, streak)
     days.push({
       date: key,
       code: sd?.code,
-      label: type?.label,
+      label: nightExit ? 'Saída da noite' : type?.label,
       workMinutes: minutes,
       night,
+      nightExit,
+      extra: Boolean(sd?.extra),
       weekend,
       events: events.filter((o) => toDateKey(o.start) === key).length,
     })
@@ -193,6 +218,7 @@ export function monthReport(data: AppData, year: number, month: number): MonthRe
     nights,
     weekendsWorked,
     daysOff,
+    nightExits,
     longestStreak,
     weeks,
     eventMinutes,
@@ -216,7 +242,7 @@ export function reportCsv(r: MonthReport): string {
     const s = String(v)
     return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
   }
-  const rows: (string | number)[][] = [['Data', 'Dia da semana', 'Turno', 'Descrição', 'Horas de turno', 'Noite', 'Eventos']]
+  const rows: (string | number)[][] = [['Data', 'Dia da semana', 'Turno', 'Descrição', 'Horas de turno', 'Noite', 'Eventos', 'Extra']]
   for (const d of r.days) {
     const date = parseLocal(d.date)
     rows.push([
@@ -227,6 +253,7 @@ export function reportCsv(r: MonthReport): string {
       d.workMinutes ? (d.workMinutes / 60).toFixed(2).replace('.', ',') : '',
       d.night ? 'sim' : '',
       d.events || '',
+      d.extra ? 'sim' : '',
     ])
   }
   rows.push([])
@@ -234,6 +261,7 @@ export function reportCsv(r: MonthReport): string {
   rows.push(['Dias de trabalho', r.summary.workDays])
   rows.push(['Noites', r.nights])
   rows.push(['Fins de semana a trabalhar', r.weekendsWorked])
+  rows.push(['Saídas da noite', r.nightExits])
   rows.push(['Folgas e descansos', r.daysOff])
   return '﻿' + rows.map((row) => row.map(esc).join(';')).join('\r\n')
 }
