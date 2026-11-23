@@ -15,10 +15,13 @@ export function registerServiceWorker() {
   if (!import.meta.env.PROD || import.meta.env.MODE === 'android' || !('serviceWorker' in navigator)) return
   window.addEventListener('load', async () => {
     try {
+      // Na primeira visita o service worker toma conta da página (controllerchange) sem haver versão nova:
+      // recarregar aí interrompia o que o utilizador estava a fazer. Só se recarrega numa troca de versão.
+      const hadController = Boolean(navigator.serviceWorker.controller)
       const reg = await navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL })
       let reloading = false
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (reloading) return
+        if (reloading || !hadController) return
         reloading = true
         window.location.reload()
       })

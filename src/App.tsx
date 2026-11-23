@@ -22,6 +22,9 @@ const ReportsPage = lazy(() => import('./ui/ReportsPage').then((m) => ({ default
 const AssistantPage = lazy(() => import('./ui/AssistantPage').then((m) => ({ default: m.AssistantPage })))
 const TasksPage = lazy(() => import('./ui/TasksPage').then((m) => ({ default: m.TasksPage })))
 
+/** Assistente IA desligado a pedido do utilizador (23/11/2026): não usar a API paga. O código fica guardado. */
+const ASSISTANT_ENABLED = false
+
 type Page = 'home' | 'calendar' | 'tasks' | 'assistant' | 'shifts' | 'reports' | 'settings'
 
 const readPref = <T extends string>(key: string, fallback: T): T => {
@@ -158,7 +161,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
         if (d) setCursor(d)
         setPage('shifts')
       } else if (where === 'tarefas') setPage('tasks')
-      else if (where === 'assistente') setPage('assistant')
+      else if (where === 'assistente' && ASSISTANT_ENABLED) setPage('assistant')
       else return // outros (ex.: resposta do login) não são nossos
       history.replaceState(null, '', window.location.pathname + window.location.search)
     }
@@ -188,7 +191,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
         <NavItem icon={<IconCalendar />} label="Calendário" short="Agenda" active={page === 'calendar'} onClick={() => go('calendar')} />
         <NavItem icon={<IconShifts />} label="Turnos" active={page === 'shifts'} onClick={() => go('shifts')} />
         <NavItem icon={<IconTasks />} label="Tarefas" badge={pendingCount(data.tasks, new Date())} active={page === 'tasks'} onClick={() => go('tasks')} />
-        <NavItem icon={<IconAssistant />} label="Assistente" secondary active={page === 'assistant'} onClick={() => go('assistant')} />
+        {ASSISTANT_ENABLED && <NavItem icon={<IconAssistant />} label="Assistente" secondary active={page === 'assistant'} onClick={() => go('assistant')} />}
         <NavItem icon={<IconReport />} label="Relatórios" secondary active={page === 'reports'} onClick={() => go('reports')} />
         <NavItem icon={<IconSettings />} label="Definições" secondary active={page === 'settings'} onClick={() => go('settings')} />
         <NavItem
@@ -251,7 +254,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
         {page === 'reports' && <ReportsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
         {page === 'calendar' && <CalendarPage data={data} update={update} cursor={cursor} setCursor={setCursor} view={view} setView={setView} />}
         {page === 'tasks' && <TasksPage data={data} update={update} cloud={cloud} />}
-        {page === 'assistant' && <AssistantPage data={data} update={update} signedIn={store.kind === 'supabase' && Boolean(cloud.session)} />}
+        {ASSISTANT_ENABLED && page === 'assistant' && <AssistantPage data={data} update={update} signedIn={store.kind === 'supabase' && Boolean(cloud.session)} />}
         {page === 'shifts' && <ShiftsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
         {page === 'settings' && <SettingsPage data={data} store={store} theme={theme} setTheme={setTheme} update={update} cloud={cloud} />}
         </Suspense>
@@ -259,9 +262,11 @@ export default function App({ store: injected }: { store?: DataStore }) {
       {moreOpen && (
         <div className="more-sheet-backdrop" onClick={() => setMoreOpen(false)}>
           <div className="more-sheet" role="menu" aria-label="Mais" onClick={(e) => e.stopPropagation()}>
-            <button role="menuitem" className="more-item" onClick={() => go('assistant')}>
-              <IconAssistant /> <span>Assistente IA</span>
-            </button>
+            {ASSISTANT_ENABLED && (
+              <button role="menuitem" className="more-item" onClick={() => go('assistant')}>
+                <IconAssistant /> <span>Assistente IA</span>
+              </button>
+            )}
             <button role="menuitem" className="more-item" onClick={() => go('reports')}>
               <IconReport /> <span>Relatórios e vencimento</span>
             </button>

@@ -65,12 +65,12 @@ Regra fixa: este projeto **nunca** se mistura com o MyStationBox (projeto Supaba
 - O talão do mês M paga o trabalho do mês M-1.
 - **Conferir o talão**: carrega-se o PDF do talão e a app compara as horas pagas com as do horário. Guarda só rubricas, horas e valores, **nunca** nome, NIF, IBAN, n.º de beneficiário nem n.º de apólice.
 
-### Assistente IA (separador "IA")
+### Assistente IA (desligado)
+- Desligado a 23/11/2026 por decisão do utilizador (a API da Anthropic é paga). O código fica no repositório e liga-se mudando `ASSISTANT_ENABLED` em `src/App.tsx` e guardando a chave `ANTHROPIC_API_KEY` na Supabase.
 - Perguntas em português sobre a agenda: "quando tenho tempo livre esta semana?", "marca dentista na próxima folga às 10h".
 - Responde com base em 3 semanas de turnos, compromissos e tarefas. Cada proposta aparece num cartão com "Adicionar" ou "Ignorar". **Nada é gravado sem confirmação.**
 - Não recebe vencimento, talões nem emails. Pede consentimento na primeira utilização.
 - Usa o modelo Claude da Anthropic no servidor, com limite de 60 perguntas por 24 horas.
-- **Falta ligar:** é preciso criar uma chave da API da Anthropic e guardá-la nos segredos das Edge Functions do Supabase (`ANTHROPIC_API_KEY`).
 
 ### Os meus dados (RGPD)
 - Descarregar tudo (JSON) e a agenda num ficheiro que abre no Excel (CSV com ";").
@@ -151,10 +151,9 @@ npx vite build --mode android && npx cap sync android   # app Android
 
 ## 5. O que falta ou está pendente
 
-1. **Ligar o assistente IA:** criar a chave da Anthropic e guardá-la em Supabase → Edge Functions → Secrets (`ANTHROPIC_API_KEY`).
-2. **Atualizações da app Android:** cada APK novo vem assinado com uma chave de teste diferente, por isso é preciso desinstalar antes de instalar a versão nova. Para instalar por cima, falta guardar uma chave de assinatura nos segredos do GitHub (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`).
-3. **Vencimento:** faltam turnos de junho (6, 9, 11, 16, 20, 24 e 29) para afinar a comparação com o talão de julho, e o trabalho suplementar precisa das horas contratadas.
-4. **Para vender** (decidido não avançar por agora): várias contas, pagamentos (Stripe), termos, Supabase pago, repositório privado (o Pages privado exige GitHub pago) e a revisão de segurança da Google ao acesso ao Gmail.
+1. **Atualizações da app Android:** cada APK novo vem assinado com uma chave de teste diferente, por isso é preciso desinstalar antes de instalar a versão nova. Para instalar por cima, falta guardar uma chave de assinatura nos segredos do GitHub (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`).
+2. **Vencimento:** faltam turnos de junho (6, 9, 11, 16, 20, 24 e 29) para afinar a comparação com o talão de julho, e o trabalho suplementar precisa das horas contratadas.
+3. **Para vender** (decidido não avançar por agora): várias contas, pagamentos (Stripe), termos, Supabase pago, repositório privado (o Pages privado exige GitHub pago) e a revisão de segurança da Google ao acesso ao Gmail.
 
 ---
 

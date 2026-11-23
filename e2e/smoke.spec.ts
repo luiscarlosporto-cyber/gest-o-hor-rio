@@ -8,11 +8,11 @@ test('abre, navega, cria uma tarefa e guarda-a depois de recarregar', async ({ p
   const nav = page.getByRole('navigation', { name: 'Navegação' })
   await expect(nav).toBeVisible()
 
-  for (const name of [/Calendário|Agenda/, /Turnos/, /Relatórios/, /Assistente/, /Definições/]) {
+  for (const name of [/Calendário|Agenda/, /Turnos/, /Relatórios/, /Definições/]) {
     const direct = nav.getByRole('button', { name })
     if (await direct.isVisible()) await direct.click()
     else {
-      // No telemóvel, Assistente, Relatórios e Definições ficam dentro de "Mais".
+      // No telemóvel, Relatórios e Definições ficam dentro de "Mais".
       await nav.getByRole('button', { name: 'Mais' }).click()
       await page.getByRole('menuitem', { name }).click()
       await expect(page.getByRole('menu')).toHaveCount(0)
