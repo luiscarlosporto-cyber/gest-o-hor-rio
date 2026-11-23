@@ -428,3 +428,4 @@ kbd { font-family: inherit; font-size: 12px; border: 1px solid var(--line); bord
 .pay-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin: 8px 0; }
 .pay-sub { font-size: 14px; margin: 14px 0 4px; }
 .extra-pill { margin-left: 6px; font-size: 11px; padding: 1px 6px; border-radius: 999px; background: #2e7d32; color: #fff; }
+.hours-input { width: 64px; }

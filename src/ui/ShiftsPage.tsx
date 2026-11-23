@@ -235,6 +235,7 @@ function ShiftTypesEditor({ types, onChange }: { types: ShiftType[]; onChange: (
               <th>Descrição</th>
               <th>Início</th>
               <th>Fim</th>
+              <th>Horas contadas</th>
               <th>Cor</th>
               <th>Trabalho</th>
               <th />
@@ -254,6 +255,20 @@ function ShiftTypesEditor({ types, onChange }: { types: ShiftType[]; onChange: (
                 </td>
                 <td>
                   <input type="time" value={t.end ?? ''} onChange={(e) => set(i, { end: e.target.value || undefined })} aria-label={`Fim de ${t.code}`} />
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    min="0"
+                    max="24"
+                    step="0.5"
+                    className="hours-input"
+                    value={t.paidHours ?? ''}
+                    placeholder="todas"
+                    disabled={!t.start || !t.end}
+                    onChange={(e) => set(i, { paidHours: e.target.value ? Number(e.target.value) : undefined })}
+                    aria-label={`Horas contadas de ${t.code}`}
+                  />
                 </td>
                 <td>
                   <input type="color" value={t.color} onChange={(e) => set(i, { color: e.target.value })} aria-label={`Cor de ${t.code}`} />
@@ -281,6 +296,7 @@ function ShiftTypesEditor({ types, onChange }: { types: ShiftType[]; onChange: (
               <td>
                 <input type="time" value={draft.end ?? ''} onChange={(e) => setDraft({ ...draft, end: e.target.value })} aria-label="Novo fim" />
               </td>
+              <td />
               <td>
                 <input type="color" value={draft.color} onChange={(e) => setDraft({ ...draft, color: e.target.value })} aria-label="Nova cor" />
               </td>

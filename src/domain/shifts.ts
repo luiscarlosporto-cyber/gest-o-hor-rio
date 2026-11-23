@@ -10,7 +10,7 @@ export const DEFAULT_SHIFT_TYPES: ShiftType[] = [
   { code: 'M', label: 'Manhã', start: '08:30', end: '15:30', color: '#FFE699', work: true },
   { code: 'T', label: 'Tarde', start: '15:00', end: '22:30', color: '#F8CBAD', work: true },
   { code: '6:30 T', label: 'Tarde curta', start: '15:30', end: '22:30', color: '#F8CBAD', work: true },
-  { code: 'N', label: 'Noite', start: '22:00', end: '09:00', color: '#8EA9DB', work: true },
+  { code: 'N', label: 'Noite', start: '22:00', end: '09:00', color: '#8EA9DB', work: true, paidHours: 9 },
   { code: 'D', label: 'Descanso', color: '#C6E0B4', work: false },
   { code: 'DS', label: 'Descanso semanal', color: '#E2EFDA', work: false },
   { code: 'DC', label: 'Descanso complementar', color: '#E2EFDA', work: false },
@@ -20,6 +20,14 @@ export const DEFAULT_SHIFT_TYPES: ShiftType[] = [
   { code: 'A', label: 'Ausência', color: '#BFBFBF', work: false },
   { code: 'Cgs', label: 'Comissão gratuita de serviço', color: '#BFBFBF', work: false },
 ]
+
+/** Intervalo que conta como trabalho: do início até ao fim, ou só as horas contadas do tipo. */
+export function paidTimes(date: DateKey, type: ShiftType) {
+  const t = shiftTimes(date, type)
+  if (t.allDay || !type.paidHours) return t
+  const end = new Date(t.start.getTime() + type.paidHours * 3600_000)
+  return { ...t, end: end < t.end ? end : t.end }
+}
 
 export function findType(types: ShiftType[], code: string): ShiftType | undefined {
   return types.find((t) => t.code === code) ?? types.find((t) => t.code.toLowerCase() === code.toLowerCase())
@@ -121,7 +129,7 @@ export function summarizeMonth(days: ShiftDay[], types: ShiftType[], year: numbe
     const type = findType(types, d.code)
     if (type?.work) {
       workDays++
-      const t = shiftTimes(d.date, type)
+      const t = paidTimes(d.date, type)
       workedMinutes += minutesBetween(t.start, t.end)
     }
   }

@@ -31,6 +31,7 @@ interface ShiftTypeRow {
   label: string
   start_time: string | null
   end_time: string | null
+  paid_hours?: number | null
   color: string
   is_work: boolean
   sort_order: number
@@ -161,6 +162,7 @@ export class SupabaseStore implements DataStore {
       end: hm(t.end_time),
       color: t.color,
       work: t.is_work,
+      ...(t.paid_hours ? { paidHours: Number(t.paid_hours) } : {}),
     }))
     const data: AppData = {
       version: 1,
@@ -231,6 +233,7 @@ export class SupabaseStore implements DataStore {
         end_time: t.start && t.end ? t.end : null,
         color: /^#[0-9a-f]{6}$/i.test(t.color) ? t.color : '#D9D9D9',
         is_work: t.work,
+        paid_hours: t.paidHours ?? null,
         sort_order: i,
       }))
       if (rows.length) await check(this.db.from('shift_types').upsert(rows))

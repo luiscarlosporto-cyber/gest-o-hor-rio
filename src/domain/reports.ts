@@ -1,7 +1,7 @@
 import { findConflicts } from './conflicts'
 import { addDays, daysInMonth, minutesBetween, parseLocal, startOfDay, toDateKey } from './dates'
 import { occurrencesIn } from './operations'
-import { findType, shiftTimes, summarizeMonth, type MonthSummary } from './shifts'
+import { findType, paidTimes, summarizeMonth, type MonthSummary } from './shifts'
 import { groupTasks, type Task } from './tasks'
 import type { AppData, Category, DateKey, Occurrence, ShiftType } from './types'
 
@@ -143,7 +143,7 @@ function workMinutesOn(data: AppData, key: DateKey) {
   const sd = data.shiftDays.find((s) => s.date === key)
   const type = sd ? findType(data.shiftTypes, sd.code) : undefined
   if (!sd || !type?.work) return { sd, type, minutes: 0 }
-  const t = shiftTimes(key, type)
+  const t = paidTimes(key, type)
   return { sd, type, minutes: t.allDay ? 0 : minutesBetween(t.start, t.end) }
 }
 

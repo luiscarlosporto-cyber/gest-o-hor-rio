@@ -132,7 +132,7 @@ describe('turnos', () => {
     ]
     const s = summarizeMonth(days, types, 2026, 10)
     expect(s.workDays).toBe(3)
-    expect(s.workedMinutes).toBe((14 + 11 + 7) * 60)
+    expect(s.workedMinutes).toBe((14 + 9 + 7) * 60) // a N conta 9h
     expect(s.counts.map((c) => `${c.code}:${c.days}`)).toEqual(['MT2:1', 'M:1', 'N:1', 'D:1'])
   })
 

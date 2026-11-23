@@ -52,6 +52,11 @@ export interface ShiftType {
   color: string
   /** Conta como tempo de trabalho (relatórios, conflitos). */
   work: boolean
+  /**
+   * Horas que contam (horário e vencimento), a partir do início.
+   * Ex.: N das 22h às 09h conta 9h (22h–07h: 2h no dia da N, 7h na saída). Vazio = do início ao fim.
+   */
+  paidHours?: number
 }
 
 export interface ShiftDay {

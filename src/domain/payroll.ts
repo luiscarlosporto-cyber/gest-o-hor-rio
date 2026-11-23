@@ -1,5 +1,5 @@
 import { addDays, parseLocal, toDateKey } from './dates'
-import { findType, shiftTimes } from './shifts'
+import { findType, paidTimes } from './shifts'
 import type { AppData, DateKey, PaySettings } from './types'
 
 /**
@@ -149,7 +149,7 @@ export function premiumHours(data: AppData, year: number, month: number, opts: {
     }
     const type = findType(data.shiftTypes, day.code)
     if (!type?.work || !type.start || !type.end) continue
-    const { start, end } = shiftTimes(key, type)
+    const { start, end } = paidTimes(key, type)
     for (let t = start.getTime(); t < end.getTime(); t += STEP * 60_000) {
       const at = new Date(t)
       const h = at.getHours() + at.getMinutes() / 60
