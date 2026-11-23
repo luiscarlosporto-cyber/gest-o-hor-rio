@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli'
 // App Android: a mesma app web, construída com "vite build --mode android" para dist-android/.
 const config: CapacitorConfig = {
   appId: 'pt.gestaohorario.app',
-  appName: 'Gestão Horário',
+  appName: 'Ritmia',
   webDir: 'dist-android',
   android: { allowMixedContent: false },
   plugins: {

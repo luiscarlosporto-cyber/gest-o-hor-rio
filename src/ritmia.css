@@ -1,0 +1,188 @@
+/*
+ * Ritmia: design system (camada por cima de index.css).
+ * Cores tiradas do logótipo: azul-marinho #003079, azul #0472e2, ciano #02c3fe.
+ * Tudo o que é cor, raio, sombra e tipo vive aqui em variáveis; os componentes só as usam.
+ */
+
+:root {
+  /* Marca */
+  --brand-navy: #003079;
+  --brand-blue: #0472e2;
+  --brand-cyan: #02c3fe;
+  --brand-gradient: linear-gradient(135deg, #02c3fe 0%, #0472e2 45%, #003079 100%);
+
+  /* Superfícies e texto */
+  --bg: #f4f7fc;
+  --bg-wash: radial-gradient(1200px 600px at 0% -10%, #dfeafb 0%, transparent 60%), radial-gradient(900px 500px at 100% 110%, #f7efe2 0%, transparent 60%);
+  --panel: #ffffff;
+  --raised: #ffffff;
+  --sidebar: rgba(255, 255, 255, 0.72);
+  --text: #0b1f45;
+  --muted: #5b6b85;
+  --line: #e3e9f3;
+  --line-soft: #eef2f8;
+  --accent: #0472e2;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(4, 114, 226, 0.1);
+
+  /* Famílias de turno (uma cor por família; os extra levam contorno) */
+  --shift-morning: #f2b233;
+  --shift-afternoon: #f07f63;
+  --shift-night: #4a57d4;
+  --shift-rest: #34a872;
+  --shift-leave: #4fb0ec;
+  --shift-holiday: #e0464c;
+  --shift-extra-ring: #0b1f45;
+
+  /* Forma */
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+  --shadow: 0 1px 2px rgba(11, 31, 69, 0.04), 0 6px 20px rgba(11, 31, 69, 0.06);
+  --shadow-lg: 0 24px 64px rgba(11, 31, 69, 0.18);
+
+  /* Espaçamento (escala de 4) */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+
+  /* Tipo */
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI Variable Display', 'Segoe UI', Roboto, sans-serif;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-lg: 17px;
+  --text-xl: 22px;
+  --text-2xl: 30px;
+  --text-hero: 40px;
+
+  /* Movimento */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur: 180ms;
+
+  font-family: var(--font);
+  font-size: var(--text-md);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #08101f;
+    --bg-wash: radial-gradient(1200px 600px at 0% -10%, #0f2448 0%, transparent 60%), radial-gradient(900px 500px at 100% 110%, #1b1830 0%, transparent 60%);
+    --panel: #101a2e;
+    --raised: #18243d;
+    --sidebar: rgba(16, 26, 46, 0.78);
+    --text: #eef3ff;
+    --muted: #9aa8c4;
+    --line: #21304d;
+    --line-soft: #1a2741;
+    --accent: #3d9bff;
+    --accent-ink: #04122b;
+    --accent-soft: rgba(61, 155, 255, 0.16);
+    --shift-morning: #f5c25a;
+    --shift-afternoon: #f59580;
+    --shift-night: #7d88f0;
+    --shift-rest: #4cc48b;
+    --shift-leave: #6cc0f2;
+    --shift-holiday: #f06a6f;
+    --shift-extra-ring: #eef3ff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+:root[data-theme='dark'] {
+  --bg: #08101f;
+  --bg-wash: radial-gradient(1200px 600px at 0% -10%, #0f2448 0%, transparent 60%), radial-gradient(900px 500px at 100% 110%, #1b1830 0%, transparent 60%);
+  --panel: #101a2e;
+  --raised: #18243d;
+  --sidebar: rgba(16, 26, 46, 0.78);
+  --text: #eef3ff;
+  --muted: #9aa8c4;
+  --line: #21304d;
+  --line-soft: #1a2741;
+  --accent: #3d9bff;
+  --accent-ink: #04122b;
+  --accent-soft: rgba(61, 155, 255, 0.16);
+  --shift-morning: #f5c25a;
+  --shift-afternoon: #f59580;
+  --shift-night: #7d88f0;
+  --shift-rest: #4cc48b;
+  --shift-leave: #6cc0f2;
+  --shift-holiday: #f06a6f;
+  --shift-extra-ring: #eef3ff;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+body { background: var(--bg-wash), var(--bg); background-attachment: fixed; }
+.app { background: transparent; }
+
+/* Tipografia */
+h1, h2, h3 { letter-spacing: -0.015em; color: var(--text); }
+.toolbar-title { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; letter-spacing: -0.025em; margin-left: 0; }
+.home-title { font-size: var(--text-hero); line-height: 1.05; }
+.card h2 { font-size: var(--text-lg); font-weight: 650; }
+.small { font-size: var(--text-xs); }
+
+/* Marca */
+.brand { gap: 10px; padding: 6px 8px 20px; }
+.brand-mark { width: 36px; height: 36px; border-radius: 0; background: none; object-fit: contain; }
+.brand-name { display: flex; flex-direction: column; line-height: 1; }
+.brand-word { font-family: var(--font-display); font-size: 22px; font-weight: 800; letter-spacing: -0.03em; color: var(--brand-navy); }
+.brand-sub { font-size: 11.5px; font-weight: 500; color: var(--brand-blue); margin-top: 2px; }
+:root[data-theme='dark'] .brand-word { color: #eef3ff; }
+:root[data-theme='dark'] .brand-sub { color: var(--brand-cyan); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .brand-word { color: #eef3ff; }
+  :root:not([data-theme='light']) .brand-sub { color: var(--brand-cyan); }
+}
+
+/* Navegação lateral */
+.sidebar { background: var(--sidebar); backdrop-filter: saturate(1.4) blur(18px); -webkit-backdrop-filter: saturate(1.4) blur(18px); border-right: 1px solid var(--line); }
+.nav-item { border-radius: var(--radius-sm); padding: 9px 12px; font-weight: 500; }
+.nav-item.is-active { background: var(--accent-soft); color: var(--accent); box-shadow: none; font-weight: 600; }
+.nav-mobile-only { display: none; }
+
+/* Cartões, botões, campos */
+.card { border: 1px solid transparent; border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 20px 22px; }
+.btn { border-radius: var(--radius-sm); min-height: 38px; padding: 7px 16px; font-weight: 500; border-color: var(--line); background: var(--panel); transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), transform 80ms; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn-sm { min-height: 32px; padding: 4px 12px; }
+input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea { border-radius: var(--radius-sm); }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
+.nav-badge { background: var(--brand-gradient); }
+
+/* Folha "Mais" (telemóvel) */
+.more-sheet-backdrop { position: fixed; inset: 0; background: rgba(4, 12, 28, 0.32); z-index: 40; display: flex; align-items: flex-end; animation: gh-fade var(--dur) var(--ease) both; }
+.more-sheet { width: 100%; margin: 0 10px calc(84px + env(safe-area-inset-bottom)); background: var(--panel); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 8px; display: flex; flex-direction: column; animation: gh-up 220ms var(--ease) both; }
+.more-item { display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 0 14px; border: 0; background: none; border-radius: var(--radius-sm); font-size: var(--text-lg); text-align: left; }
+.more-item svg { width: 22px; height: 22px; color: var(--accent); }
+.more-item:active { background: var(--line-soft); }
+@keyframes gh-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gh-up { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* Telemóvel */
+@media (max-width: 860px) {
+  :root { font-size: 16px; }
+  .toolbar-title { font-size: 26px; }
+  .home-title { font-size: 34px; }
+  .nav-secondary { display: none !important; }
+  .nav-mobile-only { display: flex; }
+  .sidebar {
+    margin: 0 10px calc(8px + env(safe-area-inset-bottom));
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+  }
+  .nav-item { border-radius: 14px; }
+  .nav-item.is-active { background: var(--accent-soft); }
+  .nav-label { font-size: 11px; font-weight: 600; }
+  .card { padding: 16px 18px; border-radius: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more-sheet-backdrop, .more-sheet { animation: none; }
+}

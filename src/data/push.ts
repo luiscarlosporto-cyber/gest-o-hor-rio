@@ -53,7 +53,7 @@ export async function deviceSubscribed(): Promise<boolean> {
 /** Pede autorização, subscreve e guarda o aparelho na conta. */
 export async function enableOnDevice(): Promise<void> {
   if (isNative) {
-    if (!(await (await native()).requestNativePermission())) throw new Error('As notificações foram recusadas. Ativa-as em Definições do Android → Apps → Gestão Horário → Notificações.')
+    if (!(await (await native()).requestNativePermission())) throw new Error('As notificações foram recusadas. Ativa-as em Definições do Android → Apps → Ritmia → Notificações.')
     setNativeOff(false)
     return
   }

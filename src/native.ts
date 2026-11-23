@@ -76,5 +76,5 @@ export async function scheduleNative(data: AppData, settings: ReminderSettings |
 
 export async function testNative(): Promise<void> {
   const { LocalNotifications } = await import('@capacitor/local-notifications')
-  await LocalNotifications.schedule({ notifications: [{ id: 1, title: 'Gestão Horário', body: 'As notificações estão a funcionar neste telemóvel.', schedule: { at: new Date(Date.now() + 3000) } }] })
+  await LocalNotifications.schedule({ notifications: [{ id: 1, title: 'Ritmia', body: 'As notificações estão a funcionar neste telemóvel.', schedule: { at: new Date(Date.now() + 3000) } }] })
 }

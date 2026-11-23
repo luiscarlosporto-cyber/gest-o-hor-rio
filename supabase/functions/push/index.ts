@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
     return json({ error: 'Pedido inválido' }, 400)
   }
   if (body.action === 'test') {
-    const res = await sendToUser(db, auth.user.id, { title: 'Gestão Horário', body: 'As notificações estão a funcionar neste aparelho.', url: '', tag: 'teste' })
+    const res = await sendToUser(db, auth.user.id, { title: 'Ritmia', body: 'As notificações estão a funcionar neste aparelho.', url: '', tag: 'teste' })
     await db.from('audit_log').insert({ user_id: auth.user.id, actor: 'user', action: 'push_test', entity: 'push_subscriptions', detail: res })
     return json({ ok: true, ...res })
   }

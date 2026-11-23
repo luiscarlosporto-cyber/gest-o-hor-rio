@@ -5,7 +5,8 @@ import { useAppData } from './state/useAppData'
 import { useCloud } from './state/useCloud'
 import type { View } from './ui/CalendarPage'
 import type { Theme } from './ui/SettingsPage'
-import { IconAssistant, IconCalendar, IconHome, IconReport, IconSearch, IconSettings, IconShifts, IconTasks } from './ui/icons'
+import { IconAssistant, IconCalendar, IconHome, IconMore, IconReport, IconSearch, IconSettings, IconShifts, IconTasks } from './ui/icons'
+import ritmiaMark from './assets/ritmia-mark.png'
 import { GlobalSearch } from './ui/GlobalSearch'
 import { HomePage } from './ui/HomePage'
 import { pendingCount } from './domain/tasks'
@@ -39,6 +40,11 @@ export default function App({ store: injected }: { store?: DataStore }) {
   const googleLinked = Boolean(cloud.google)
   const { syncNow } = cloud
   const [page, setPage] = useState<Page>('home')
+  const [moreOpen, setMoreOpen] = useState(false)
+  const go = (p: Page) => {
+    setMoreOpen(false)
+    setPage(p)
+  }
   const [view, setView] = useState<View>(() => readPref<View>('gh:view', 'week'))
   const [cursor, setCursor] = useState(() => new Date())
   const [theme, setTheme] = useState<Theme>(() => readPref<Theme>('gh:theme', 'system'))
@@ -130,6 +136,13 @@ export default function App({ store: injected }: { store?: DataStore }) {
     return () => window.clearTimeout(t)
   }, [loaded, data])
 
+  useEffect(() => {
+    if (!moreOpen) return
+    const close = (e: KeyboardEvent) => e.key === 'Escape' && setMoreOpen(false)
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [moreOpen])
+
   // Abrir a partir de uma notificação: #dia/AAAA-MM-DD, #turnos/AAAA-MM-DD, #tarefas.
   useEffect(() => {
     const go = () => {
@@ -160,23 +173,32 @@ export default function App({ store: injected }: { store?: DataStore }) {
     <div className="app">
       <nav className="sidebar" aria-label="Navegação">
         <div className="brand">
-          <span className="brand-mark" aria-hidden>
-            <IconShifts />
+          <img className="brand-mark" src={ritmiaMark} alt="" width={36} height={36} />
+          <span className="brand-name">
+            <span className="brand-word">ritmia</span>
+            <span className="brand-sub">gestão horário</span>
           </span>
-          <span>Gestão Horário</span>
         </div>
         <button className="global-search-btn" onClick={() => setSearchOpen(true)} aria-label="Pesquisar em toda a app">
           <IconSearch />
           <span>Pesquisar</span>
           <kbd>Ctrl K</kbd>
         </button>
-        <NavItem icon={<IconHome />} label="Início" active={page === 'home'} onClick={() => setPage('home')} />
-        <NavItem icon={<IconCalendar />} label="Calendário" short="Agenda" active={page === 'calendar'} onClick={() => setPage('calendar')} />
-        <NavItem icon={<IconTasks />} label="Tarefas" badge={pendingCount(data.tasks, new Date())} active={page === 'tasks'} onClick={() => setPage('tasks')} />
-        <NavItem icon={<IconAssistant />} label="Assistente" short="IA" active={page === 'assistant'} onClick={() => setPage('assistant')} />
-        <NavItem icon={<IconShifts />} label="Turnos" active={page === 'shifts'} onClick={() => setPage('shifts')} />
-        <NavItem icon={<IconReport />} label="Relatórios" short="Resumo" active={page === 'reports'} onClick={() => setPage('reports')} />
-        <NavItem icon={<IconSettings />} label="Definições" short="Ajustes" active={page === 'settings'} onClick={() => setPage('settings')} />
+        <NavItem icon={<IconHome />} label="Início" short="Hoje" active={page === 'home'} onClick={() => go('home')} />
+        <NavItem icon={<IconCalendar />} label="Calendário" short="Agenda" active={page === 'calendar'} onClick={() => go('calendar')} />
+        <NavItem icon={<IconShifts />} label="Turnos" active={page === 'shifts'} onClick={() => go('shifts')} />
+        <NavItem icon={<IconTasks />} label="Tarefas" badge={pendingCount(data.tasks, new Date())} active={page === 'tasks'} onClick={() => go('tasks')} />
+        <NavItem icon={<IconAssistant />} label="Assistente" secondary active={page === 'assistant'} onClick={() => go('assistant')} />
+        <NavItem icon={<IconReport />} label="Relatórios" secondary active={page === 'reports'} onClick={() => go('reports')} />
+        <NavItem icon={<IconSettings />} label="Definições" secondary active={page === 'settings'} onClick={() => go('settings')} />
+        <NavItem
+          icon={<IconMore />}
+          label="Mais"
+          mobileOnly
+          expanded={moreOpen}
+          active={moreOpen || page === 'assistant' || page === 'reports' || page === 'settings'}
+          onClick={() => setMoreOpen((o) => !o)}
+        />
         <div className="sidebar-foot small">
           {supabase && !cloud.session && (
             <button className="btn btn-google" onClick={() => signInWithGoogle().catch((e) => setSignInError(String(e)))}>
@@ -234,6 +256,24 @@ export default function App({ store: injected }: { store?: DataStore }) {
         {page === 'settings' && <SettingsPage data={data} store={store} theme={theme} setTheme={setTheme} update={update} cloud={cloud} />}
         </Suspense>
       </main>
+      {moreOpen && (
+        <div className="more-sheet-backdrop" onClick={() => setMoreOpen(false)}>
+          <div className="more-sheet" role="menu" aria-label="Mais" onClick={(e) => e.stopPropagation()}>
+            <button role="menuitem" className="more-item" onClick={() => go('assistant')}>
+              <IconAssistant /> <span>Assistente IA</span>
+            </button>
+            <button role="menuitem" className="more-item" onClick={() => go('reports')}>
+              <IconReport /> <span>Relatórios e vencimento</span>
+            </button>
+            <button role="menuitem" className="more-item" onClick={() => go('settings')}>
+              <IconSettings /> <span>Definições</span>
+            </button>
+            <button role="menuitem" className="more-item" onClick={() => { setMoreOpen(false); setSearchOpen(true) }}>
+              <IconSearch /> <span>Pesquisar</span>
+            </button>
+          </div>
+        </div>
+      )}
       {searchOpen && (
         <GlobalSearch
           data={data}
@@ -254,9 +294,37 @@ export default function App({ store: injected }: { store?: DataStore }) {
   )
 }
 
-function NavItem({ icon, label, short, active, onClick, badge }: { icon: ReactNode; label: string; short?: string; active: boolean; onClick: () => void; badge?: number }) {
+function NavItem({
+  icon,
+  label,
+  short,
+  active,
+  onClick,
+  badge,
+  secondary,
+  mobileOnly,
+  expanded,
+}: {
+  icon: ReactNode
+  label: string
+  short?: string
+  active: boolean
+  onClick: () => void
+  badge?: number
+  /** No telemóvel fica dentro de "Mais". */
+  secondary?: boolean
+  /** Só aparece no telemóvel. */
+  mobileOnly?: boolean
+  expanded?: boolean
+}) {
+  const cls = `nav-item${active ? ' is-active' : ''}${secondary ? ' nav-secondary' : ''}${mobileOnly ? ' nav-mobile-only' : ''}`
   return (
-    <button className={`nav-item${active ? ' is-active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined}>
+    <button
+      className={cls}
+      onClick={onClick}
+      aria-current={active && !mobileOnly ? 'page' : undefined}
+      aria-expanded={mobileOnly ? Boolean(expanded) : undefined}
+    >
       <span className="nav-icon" aria-hidden>
         {icon}
       </span>
