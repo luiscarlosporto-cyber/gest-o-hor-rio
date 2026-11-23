@@ -31,6 +31,15 @@ export const TRU_2026: Record<number, number> = {
 
 export const CATEGORIES_ENF = ['Enfermeiro', 'Enfermeiro especialista', 'Enfermeiro gestor'] as const
 
+/** Índice remuneratório de cada posição, por categoria (carreiras de enfermagem, 2026). */
+export const CAREER_POSITIONS: Record<(typeof CATEGORIES_ENF)[number], number[]> = {
+  Enfermeiro: [19, 23, 27, 31, 34, 37, 40, 43, 46, 49, 52],
+  'Enfermeiro especialista': [24, 28, 31, 34, 37, 40, 43, 46, 49, 52],
+  'Enfermeiro gestor': [38, 42, 46, 50, 53, 56, 58],
+}
+
+export const positionsFor = (category: string) => CAREER_POSITIONS[category as (typeof CATEGORIES_ENF)[number]]
+
 export const defaultPaySettings = (): PaySettings => ({ category: 'Enfermeiro', weeklyHours: 35, municipalHolidays: ['11-11'] })
 
 export const monthlyBase = (p?: PaySettings) => p?.monthly ?? (p?.level ? TRU_2026[p.level] : undefined)

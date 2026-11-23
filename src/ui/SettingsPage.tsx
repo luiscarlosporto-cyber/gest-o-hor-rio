@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { exportJson, importJson, type DataStore } from '../data/store'
 import { signInWithGoogle, supabase } from '../data/supabase'
-import { CATEGORIES_ENF, defaultPaySettings, hourlyRate, monthlyBase, TRU_2026 } from '../domain/payroll'
+import { CATEGORIES_ENF, defaultPaySettings, hourlyRate, monthlyBase, positionsFor, TRU_2026 } from '../domain/payroll'
 import type { AppData, PaySettings } from '../domain/types'
 import type { useCloud } from '../state/useCloud'
 
@@ -164,6 +164,12 @@ function PayCard({ pay, onChange }: { pay?: PaySettings; onChange: (p: PaySettin
   const set = (patch: Partial<PaySettings>) => onChange({ ...p, ...patch })
   const base = monthlyBase(p)
   const custom = !CATEGORIES_ENF.includes(p.category as (typeof CATEGORIES_ENF)[number])
+  const positions = positionsFor(p.category)
+  const setCategory = (category: string) => {
+    const pos = positionsFor(category)
+    const position = pos && p.position && p.position <= pos.length ? p.position : undefined
+    set({ category, position, level: pos && position ? pos[position - 1] : custom ? p.level : undefined })
+  }
   return (
     <section className="card" aria-labelledby="s-pay">
       <h2 id="s-pay">Vencimento</h2>
@@ -171,7 +177,7 @@ function PayCard({ pay, onChange }: { pay?: PaySettings; onChange: (p: PaySettin
       <div className="pay-form">
         <label className="field">
           <span>Categoria</span>
-          <select value={custom ? '' : p.category} onChange={(e) => set({ category: e.target.value || 'Outra' })}>
+          <select value={custom ? '' : p.category} onChange={(e) => setCategory(e.target.value || 'Outra')}>
             {CATEGORIES_ENF.map((c) => (
               <option key={c} value={c}>
                 {c}
@@ -186,17 +192,37 @@ function PayCard({ pay, onChange }: { pay?: PaySettings; onChange: (p: PaySettin
             <input value={p.category === 'Outra' ? '' : p.category} onChange={(e) => set({ category: e.target.value || 'Outra' })} />
           </label>
         )}
-        <label className="field">
-          <span>Nível remuneratório (escalão)</span>
-          <select value={p.level ?? ''} onChange={(e) => set({ level: e.target.value ? Number(e.target.value) : undefined })}>
-            <option value="">Escolher…</option>
-            {Object.entries(TRU_2026).map(([lvl, val]) => (
-              <option key={lvl} value={lvl}>
-                Nível {lvl} · {euro(val)}
-              </option>
-            ))}
-          </select>
-        </label>
+        {positions ? (
+          <label className="field">
+            <span>Posição remuneratória</span>
+            <select
+              value={p.position ?? ''}
+              onChange={(e) => {
+                const position = e.target.value ? Number(e.target.value) : undefined
+                set({ position, level: position ? positions[position - 1] : undefined })
+              }}
+            >
+              <option value="">Escolher…</option>
+              {positions.map((lvl, i) => (
+                <option key={lvl} value={i + 1}>
+                  {i + 1}.ª · índice {lvl} · {euro(TRU_2026[lvl])}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <label className="field">
+            <span>Índice remuneratório</span>
+            <select value={p.level ?? ''} onChange={(e) => set({ level: e.target.value ? Number(e.target.value) : undefined })}>
+              <option value="">Escolher…</option>
+              {Object.entries(TRU_2026).map(([lvl, val]) => (
+                <option key={lvl} value={lvl}>
+                  Índice {lvl} · {euro(val)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className="field">
           <span>Remuneração base (se for diferente)</span>
           <input
@@ -235,7 +261,7 @@ function PayCard({ pay, onChange }: { pay?: PaySettings; onChange: (p: PaySettin
           Valor/hora (R): <strong>{euro(hourlyRate(base, p.weeklyHours))}</strong> · base {euro(base)}
         </p>
       ) : (
-        <p className="small muted">Escolhe o nível para ver o valor/hora.</p>
+        <p className="small muted">Escolhe a posição para ver o valor/hora.</p>
       )}
     </section>
   )

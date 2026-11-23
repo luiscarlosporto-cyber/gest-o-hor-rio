@@ -9,6 +9,7 @@ export const DEFAULT_SHIFT_TYPES: ShiftType[] = [
   { code: 'MT2', label: 'Manhã e tarde', start: '08:30', end: '22:30', color: '#F4B183', work: true },
   { code: 'M', label: 'Manhã', start: '08:30', end: '15:30', color: '#FFE699', work: true },
   { code: 'T', label: 'Tarde', start: '15:00', end: '22:30', color: '#F8CBAD', work: true },
+  { code: '6:30 T', label: 'Tarde curta', start: '15:30', end: '22:30', color: '#F8CBAD', work: true },
   { code: 'N', label: 'Noite', start: '22:00', end: '09:00', color: '#8EA9DB', work: true },
   { code: 'D', label: 'Descanso', color: '#C6E0B4', work: false },
   { code: 'DS', label: 'Descanso semanal', color: '#E2EFDA', work: false },
@@ -16,6 +17,8 @@ export const DEFAULT_SHIFT_TYPES: ShiftType[] = [
   { code: 'F', label: 'Folga', color: '#E2EFDA', work: false },
   { code: 'Fe', label: 'Feriado', color: '#D9D9D9', work: false },
   { code: 'L', label: 'Férias', color: '#A9D08E', work: false },
+  { code: 'A', label: 'Ausência', color: '#BFBFBF', work: false },
+  { code: 'Cgs', label: 'Comissão gratuita de serviço', color: '#BFBFBF', work: false },
 ]
 
 export function findType(types: ShiftType[], code: string): ShiftType | undefined {

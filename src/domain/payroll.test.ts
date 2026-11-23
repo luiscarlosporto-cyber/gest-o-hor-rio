@@ -72,3 +72,12 @@ describe('estimativa em euros', () => {
     expect(e.lines.map((l) => l.amount)).toEqual([54.65, 13.66, 98.37])
   })
 })
+
+describe('categorias e posições', () => {
+  it('cada posição dá o índice e o valor da tabela de 2026', async () => {
+    const { positionsFor, monthlyBase } = await import('./payroll')
+    expect(positionsFor('Enfermeiro especialista')?.[3]).toBe(34)
+    expect(monthlyBase({ category: 'Enfermeiro gestor', position: 1, level: 38, weeklyHours: 35, municipalHolidays: [] })).toBe(2679.17)
+    expect(positionsFor('Outra')).toBeUndefined()
+  })
+})

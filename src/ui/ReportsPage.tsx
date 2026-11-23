@@ -198,7 +198,7 @@ export function ReportsPage({ data, cursor, setCursor }: Props) {
             <p className="small muted">Valores brutos, antes de descontos. Pode haver diferenças de arredondamento face ao talão.</p>
           </>
         ) : (
-          <p className="small muted">Para ver os valores em euros, escolhe o teu nível remuneratório em Definições.</p>
+          <p className="small muted">Para ver os valores em euros, escolhe a tua categoria e posição em Definições.</p>
         )}
         {pay.missingDays.length > 0 && (
           <p className="small pay-warn">

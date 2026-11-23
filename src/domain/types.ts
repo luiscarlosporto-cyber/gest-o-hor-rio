@@ -82,7 +82,9 @@ export interface Occurrence {
 export interface PaySettings {
   /** Categoria (texto livre; ex.: Enfermeiro, Enfermeiro especialista). */
   category: string
-  /** Nível remuneratório da TRU (ex.: 34). */
+  /** Posição remuneratória na categoria (1, 2, 3…). */
+  position?: number
+  /** Índice remuneratório da TRU (ex.: 34); vem da categoria e posição. */
   level?: number
   /** Remuneração base mensal em euros; se vazio, usa a do nível. */
   monthly?: number
