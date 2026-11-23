@@ -137,7 +137,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
           </div>
         )}
         {page === 'calendar' && <CalendarPage data={data} update={update} cursor={cursor} setCursor={setCursor} view={view} setView={setView} />}
-        {page === 'tasks' && <TasksPage data={data} update={update} />}
+        {page === 'tasks' && <TasksPage data={data} update={update} cloud={cloud} />}
         {page === 'shifts' && <ShiftsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
         {page === 'settings' && <SettingsPage data={data} store={store} theme={theme} setTheme={setTheme} update={update} cloud={cloud} />}
       </main>

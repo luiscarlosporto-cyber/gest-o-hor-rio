@@ -8,6 +8,8 @@ export interface GoogleStatus {
   google_email: string | null
   last_synced_at: string | null
   last_error: string | null
+  gmail_enabled?: boolean
+  gmail_scanned_at?: string | null
 }
 
 export type SyncState = 'idle' | 'syncing' | 'error'
@@ -53,7 +55,7 @@ export function useCloud(injected?: DataStore) {
 
   const refreshStatus = useCallback(async () => {
     if (!supabase || !userId) return setGoogle(null)
-    const { data } = await supabase.from('google_status').select('google_email, last_synced_at, last_error').maybeSingle()
+    const { data } = await supabase.from('google_status').select('google_email, last_synced_at, last_error, gmail_enabled, gmail_scanned_at').maybeSingle()
     setGoogle((data as GoogleStatus | null) ?? null)
   }, [userId])
 
@@ -83,6 +85,14 @@ export function useCloud(injected?: DataStore) {
     finish(await callGoogle('sync'))
   }, [finish, userId])
 
+  /** Lê os emails recentes no servidor e devolve quantas sugestões novas encontrou. */
+  const scanGmail = useCallback(async (): Promise<SyncResult> => {
+    if (!supabase || !userId) return { error: 'Sem sessão' }
+    const r = await callGoogle('gmail_scan')
+    refreshStatus()
+    return r
+  }, [userId, refreshStatus])
+
   const disconnectGoogle = useCallback(async () => {
     await callGoogle('disconnect')
     await refreshStatus()
@@ -97,5 +107,5 @@ export function useCloud(injected?: DataStore) {
     refreshStatus()
   }, [refreshStatus])
 
-  return { ready, session, store, google, sync, syncMessage, syncNow, disconnectGoogle, signOut, onSynced, refreshStatus }
+  return { ready, session, store, google, sync, syncMessage, syncNow, scanGmail, disconnectGoogle, signOut, onSynced, refreshStatus }
 }

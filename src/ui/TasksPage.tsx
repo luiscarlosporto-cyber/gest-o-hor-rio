@@ -2,11 +2,14 @@ import { useMemo, useState } from 'react'
 import { addDays, formatLongDate, parseLocal, toDateKey } from '../domain/dates'
 import { addTask, groupTasks, parseQuickTask, PRIORITIES, removeTask, toggleTask, updateTask, type Priority, type Task } from '../domain/tasks'
 import type { AppData } from '../domain/types'
+import type { useCloud } from '../state/useCloud'
+import { Suggestions } from './Suggestions'
 
 interface Props {
   data: AppData
   update: (fn: (d: AppData) => AppData) => void
   now?: Date
+  cloud?: ReturnType<typeof useCloud>
 }
 
 const dueLabel = (t: Pick<Task, 'due' | 'dueTime'>, today: string) => {
@@ -17,7 +20,7 @@ const dueLabel = (t: Pick<Task, 'due' | 'dueTime'>, today: string) => {
   return t.dueTime ? `${day}, ${t.dueTime}` : day
 }
 
-export function TasksPage({ data, update, now = new Date() }: Props) {
+export function TasksPage({ data, update, now = new Date(), cloud }: Props) {
   const [text, setText] = useState('')
   const [editing, setEditing] = useState<string | null>(null)
   const [showDone, setShowDone] = useState(false)
@@ -74,6 +77,8 @@ export function TasksPage({ data, update, now = new Date() }: Props) {
         )}
         {!preview && <p className="small muted task-add-hint">Escreve a data como "amanhã", "sexta", "25/12" e a hora como "14h". Um "!" marca prioridade alta.</p>}
       </form>
+
+      {cloud && <Suggestions cloud={cloud} update={update} />}
 
       {open === 0 && <div className="empty card">Não há tarefas por fazer. Escreve uma em cima.</div>}
 

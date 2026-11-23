@@ -2,6 +2,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { cors, json } from '../_shared/cors.ts'
 import { accessToken, GoogleAuthError, stopChannel, syncUser } from '../_shared/sync.ts'
+import { hasGmailScope, scanGmail } from '../_shared/gmail.ts'
 
 const admin = () => createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
 
@@ -25,9 +26,11 @@ Deno.serve(async (req) => {
   try {
     if (body.action === 'connect') {
       if (!body.refresh_token) return json({ error: 'Falta a autorização do Google. Volta a entrar com o Google.' }, 400)
-      await accessToken(body.refresh_token) // confirma que o token funciona antes de o guardar
+      const access = await accessToken(body.refresh_token) // confirma que o token funciona antes de o guardar
       const { error } = await db.rpc('store_google_token', { p_user: user.id, p_token: body.refresh_token, p_email: user.email ?? null })
       if (error) throw error
+      const gmail = await hasGmailScope(access)
+      await db.from('google_accounts').update({ gmail_enabled: gmail }).eq('user_id', user.id)
       await db.from('audit_log').insert({ user_id: user.id, actor: 'user', action: 'google_connect', entity: 'google_accounts' })
       const report = await syncUser(db, user.id)
       return json({ ok: true, report })
@@ -36,6 +39,16 @@ Deno.serve(async (req) => {
     if (body.action === 'sync') {
       const report = await syncUser(db, user.id)
       return json({ ok: true, report })
+    }
+
+    if (body.action === 'gmail_scan') {
+      const { data: acc } = await db.from('google_accounts').select('gmail_enabled, gmail_scanned_at').eq('user_id', user.id).maybeSingle()
+      if (!acc?.gmail_enabled) return json({ error: 'O Gmail não está ligado.' }, 400)
+      const { data: refresh } = await db.rpc('read_google_token', { p_user: user.id })
+      if (!refresh) throw new GoogleAuthError('Conta Google não ligada.')
+      const found = await scanGmail(db, await accessToken(refresh as string), user.id, acc.gmail_scanned_at)
+      await db.from('audit_log').insert({ user_id: user.id, actor: 'sync', action: 'gmail_scan', entity: 'suggestions', detail: { found } })
+      return json({ ok: true, found })
     }
 
     if (body.action === 'disconnect') {
