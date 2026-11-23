@@ -21,7 +21,7 @@ describe('página do horário', () => {
   // Dezembro de 2026: primeira coluna é 30 de novembro; colunas de 13 pontos a partir de x=150.
   const colX = (i: number) => 150 + i * 13
   const header: PdfText[] = ['30', '1-dez', ...Array.from({ length: 30 }, (_, i) => String(i + 2))].map((s, i) => ({ str: s, x: colX(i) + 2, y: 100, w: 6, h: 4 }))
-  const codes = ['L', 'Fe', 'L', 'L', 'L', 'DC', 'DS', 'L', 'Fe', 'N', 'D', '6:30 T', 'DC', 'MT2', 'N', 'D', 'DS', 'DC', 'MT2', 'N', 'D', 'DS', 'M', 'MT2', 'DC', 'Fe', 'N', 'D', 'MT2', 'DS', 'M', 'N']
+  const codes = ['L', 'Fe', 'L', 'L', 'L', 'DC', 'DS', 'L', 'Fe', 'N', 'DN', '6:30 T', 'DC', 'MT2', 'N', 'D', 'DS', 'DC', 'MT2', 'N', 'D', 'DS', 'M', 'MT2', 'DC', 'Fe', 'N', 'D', 'MT2', 'DS', 'M', 'N']
   const row: PdfText[] = [
     { str: '71402', x: 39, y: 200, w: 12, h: 4 },
     { str: 'LUIS', x: 71, y: 200, w: 9, h: 4 },
@@ -46,6 +46,8 @@ describe('página do horário', () => {
     expect(r.days.find((d) => d.date === '2026-12-11')).toMatchObject({ code: '6:30 T', extra: true })
     expect(r.days.filter((d) => d.extra).map((d) => d.date)).toEqual(['2026-12-11', '2026-12-22', '2026-12-30'])
     expect(r.days.at(-1)).toMatchObject({ date: '2026-12-31', code: 'N' })
+    // duas noites seguidas: "DN" é uma N normal, não extra
+    expect(r.days.find((d) => d.date === '2026-12-10')).toEqual({ date: '2026-12-10', code: 'N', raw: 'DN' })
   })
 
   it('não encontra quem não está na página', () => {

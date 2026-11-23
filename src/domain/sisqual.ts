@@ -54,7 +54,7 @@ export function resolveCell(raw: string, types: ShiftType[]): { code: string; un
   // Dois códigos na mesma célula (ex.: "DS M", "DC N"): o segundo é o turno feito nesse dia.
   const expanded = tokens.flatMap((t) => {
     if (codes.has(t)) return [t]
-    // "DN": descanso + noite colados
+    // "DN": saída da noite anterior + nova N (duas noites seguidas)
     // só descanso + trabalho (não separar códigos como "TL")
     for (const c of [...codes].filter((c) => !work.has(c)).sort((a, b) => b.length - a.length)) {
       if (t.startsWith(c) && work.has(t.slice(c.length))) return [c, t.slice(c.length)]
@@ -135,7 +135,8 @@ export function parseSisqualPage(page: PdfPage, employee: string, types: ShiftTy
     const green = page.greenRatio(b.x0 + 0.5, b.x1 - 0.5, rowY - lineH * 0.3, rowY + lineH * 1.2) > 0.08
     const type = types.find((t) => t.code === r.code)
     const day: SisqualDay = { date: dates[k], code: r.code, raw }
-    if ((green || r.second) && type?.work) day.extra = true
+    // Extra só quando a célula está a verde ("DN" = saída da noite anterior + nova N, não é extra por si).
+    if (green && type?.work) day.extra = true
     if (r.unknown) day.unknown = true
     days.push(day)
   })
