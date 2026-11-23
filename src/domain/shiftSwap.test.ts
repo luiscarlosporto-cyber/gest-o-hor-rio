@@ -89,3 +89,19 @@ describe('planSwap', () => {
     expect(days).toHaveLength(roster.length)
   })
 })
+
+describe('shiftLabel', () => {
+  it('mostra "D N" numa noite que vem depois de outra noite; o gravado continua N', async () => {
+    const { shiftLabel, shiftOccurrences } = await import('./shifts')
+    const days: ShiftDay[] = [
+      { date: '2026-11-23', code: 'N' },
+      { date: '2026-11-24', code: 'N' },
+      { date: '2026-11-25', code: 'D' },
+      { date: '2026-11-26', code: 'M' },
+    ]
+    const byDate = new Map(days.map((d) => [d.date, d.code]))
+    expect(days.map((d) => shiftLabel(d.date, d.code, byDate, T))).toEqual(['N', 'D N', 'D', 'M'])
+    const occ = shiftOccurrences(days, T, new Date(2026, 10, 24), new Date(2026, 10, 25))
+    expect(occ.find((o) => o.shiftDate === '2026-11-24')?.title).toBe('D N')
+  })
+})

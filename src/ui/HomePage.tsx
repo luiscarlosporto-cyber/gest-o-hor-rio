@@ -83,7 +83,7 @@ export function HomePage({ data, update, now: fixedNow, go }: Props) {
           {hero && heroInfo ? (
             <>
               <div className="home-hero-main">
-                <span className="home-hero-code">{heroInfo.code}</span>
+                <span className="home-hero-code">{hero.title}</span>
                 <span className="home-hero-label">
                   {heroInfo.label ?? FAMILY_LABEL[heroInfo.family]}
                   {heroInfo.extra && <span className="pill pill-extra">Extra</span>}
@@ -234,7 +234,7 @@ export function HomePage({ data, update, now: fixedNow, go }: Props) {
                   <span className="home-day-dow">{d.date === toDateKey(now) ? 'Hoje' : weekdayShort(date)}</span>
                   <span className="home-day-dom">{date.getDate()}</span>
                   {d.shift ? (
-                    <span className={`shift-pill fam-${famOfCode(d.shift.code)}${extra ? ' is-extra' : ''}`}>{d.shift.code}</span>
+                    <span className={`shift-pill fam-${famOfCode(d.shift.code)}${extra ? ' is-extra' : ''}`}>{d.shift.label}</span>
                   ) : (
                     <span className="chip home-day-empty">–</span>
                   )}

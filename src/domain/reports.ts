@@ -1,7 +1,7 @@
 import { findConflicts } from './conflicts'
 import { addDays, daysInMonth, minutesBetween, parseLocal, startOfDay, toDateKey } from './dates'
 import { occurrencesIn } from './operations'
-import { findType, NIGHT_EXIT_CODE, paidTimes, shiftErrors, summarizeMonth, type MonthSummary } from './shifts'
+import { findType, NIGHT_EXIT_CODE, paidTimes, shiftLabel, shiftErrors, summarizeMonth, type MonthSummary } from './shifts'
 import { groupTasks, type Task } from './tasks'
 import type { AppData, Category, DateKey, Occurrence, ShiftType } from './types'
 
@@ -9,7 +9,8 @@ import type { AppData, Category, DateKey, Occurrence, ShiftType } from './types'
 
 export interface DayStrip {
   date: DateKey
-  shift?: { code: string; color?: string; work: boolean }
+  /** label: o que se mostra ("D N" depois de uma noite); code: o que está gravado. */
+  shift?: { code: string; label: string; color?: string; work: boolean }
   events: number
 }
 
@@ -62,13 +63,14 @@ export function todayOverview(data: AppData, now: Date): TodayOverview {
   const g = groupTasks(data.tasks, now)
 
   const week: DayStrip[] = []
+  const byDate = new Map(data.shiftDays.map((s) => [s.date, s.code]))
   for (let i = 0; i < 7; i++) {
     const d = addDays(today, i)
     const key = toDateKey(d)
     const sd = data.shiftDays.find((s) => s.date === key)
     const type = sd ? findType(data.shiftTypes, sd.code) : undefined
     const events = ahead.filter((o) => o.source === 'event' && toDateKey(o.start) === key).length
-    week.push({ date: key, shift: sd ? { code: sd.code, color: type?.color, work: Boolean(type?.work) } : undefined, events })
+    week.push({ date: key, shift: sd ? { code: sd.code, label: shiftLabel(key, sd.code, byDate, data.shiftTypes), color: type?.color, work: Boolean(type?.work) } : undefined, events })
   }
 
   let nextDayOff: DateKey | undefined

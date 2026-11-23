@@ -292,3 +292,4 @@ body:has(.modal-backdrop, .more-sheet-backdrop) .global-search-btn { display: no
 .swap-codes { display: inline-flex; gap: 8px; align-items: center; }
 .swap-auto { flex-basis: 100%; }
 .swap-warnings li { padding: 8px 12px; border-radius: var(--radius-sm, 10px); background: color-mix(in srgb, var(--shift-afternoon, #f07f63) 16%, transparent); color: var(--text); }
+.shift-cell-exit { font-size: var(--text-xs, 12px); font-weight: 700; color: var(--text); }

@@ -1,7 +1,7 @@
 import { chipStyle, ritmiaColor } from '../domain/shiftFamily'
 import { useMemo, useState } from 'react'
 import { addMonths, daysInMonth, formatMonthYear, monthGrid, toDateKey, weekdayShort } from '../domain/dates'
-import { mergeShiftDays, parseRosterLine, shiftErrors, summarizeMonth, findType, type RosterParseResult } from '../domain/shifts'
+import { mergeShiftDays, parseRosterLine, shiftErrors, shiftLabel, summarizeMonth, findType, type RosterParseResult } from '../domain/shifts'
 import type { AppData, ShiftDay, ShiftType } from '../domain/types'
 import { ShiftSwap } from './ShiftSwap'
 import { SisqualImport } from './SisqualImport'
@@ -192,6 +192,11 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
                 <span className="shift-cell-day">
                   {d.getDate()} <span className="muted">{weekdayShort(d)}</span>
                 </span>
+                {shiftLabel(key, code, byDate, data.shiftTypes) !== code && (
+                  <span className="shift-cell-exit" title="Saída da noite anterior (00h–09h)">
+                    D +
+                  </span>
+                )}
                 <select value={code} onChange={(e) => setDay(key, e.target.value)} aria-label={`Turno do dia ${key}`}>
                   <option value="">—</option>
                   {data.shiftTypes.map((t) => (

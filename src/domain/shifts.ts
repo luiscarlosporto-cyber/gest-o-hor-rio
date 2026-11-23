@@ -69,10 +69,23 @@ export function shiftOccurrence(day: ShiftDay, types: ShiftType[]): Occurrence {
 export function shiftOccurrences(days: ShiftDay[], types: ShiftType[], from: Date, to: Date): Occurrence[] {
   const fromKey = toDateKey(addDays(from, -1))
   const toKey = toDateKey(to)
+  const byDate = new Map(days.map((d) => [d.date, d.code]))
   return days
     .filter((d) => d.date >= fromKey && d.date <= toKey)
-    .map((d) => shiftOccurrence(d, types))
+    .map((d) => ({ ...shiftOccurrence(d, types), title: shiftLabel(d.date, d.code, byDate, types) }))
     .filter((o) => o.start < to && o.end > from)
+}
+
+/**
+ * Código a mostrar num dia. Depois de uma noite, um dia com outro turno também tem a saída (00h–09h):
+ * mostra-se "D N" como no SISQUAL, embora fique gravado só o turno feito (N).
+ */
+export function shiftLabel(date: DateKey, code: string, byDate: Map<DateKey, string>, types: ShiftType[]): string {
+  if (!code || code === NIGHT_EXIT_CODE || !findType(types, code)?.work) return code
+  const prev = byDate.get(toDateKey(addDays(parseLocal(date), -1)))
+  const t = prev ? findType(types, prev) : undefined
+  const prevNight = Boolean(t?.work && t.start && t.end && t.end <= t.start)
+  return prevNight ? `${NIGHT_EXIT_CODE} ${code}` : code
 }
 
 export interface RosterParseResult {
