@@ -163,7 +163,7 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
             {errors.map((e) => Number(e.date.slice(8))).join(', ')}.
           </p>
         )}
-        <div className="shift-grid" role="grid">
+        <div className="shift-grid" role="group" aria-label="Turnos do mês">
           {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((h) => (
             <div key={h} className="shift-grid-head">
               {h}

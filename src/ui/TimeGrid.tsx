@@ -144,7 +144,7 @@ export function TimeGrid({ days, occurrences, conflictKeys, onSlot, onOpen, onDa
               const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, minutes)
               onSlot(start)
             }}
-            role="grid"
+            role="group"
             aria-label={`Dia ${d.getDate()}`}
           >
             {timedByDay[i].map((p) => {

@@ -31,7 +31,7 @@
   --shift-night: #4a57d4;
   --shift-rest: #34a872;
   --shift-leave: #4fb0ec;
-  --shift-holiday: #e0464c;
+  --shift-holiday: #c62f35;
   --shift-extra-ring: #0b1f45;
 
   /* Forma */
@@ -196,8 +196,11 @@ input:not([type='checkbox']):not([type='radio']):not([type='range']), select, te
 .fam-leave { --fam: var(--shift-leave); }
 .fam-holiday { --fam: var(--shift-holiday); }
 .fam-other { --fam: var(--muted); }
-.shift-pill { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700; color: #fff; background: var(--fam, var(--muted)); letter-spacing: 0.01em; }
-.fam-morning.shift-pill { color: #3a2600; }
+/* Texto por cima da cor da família: escuro, exceto onde o branco tem mais contraste (WCAG AA) */
+.fam-night, .fam-holiday { --fam-ink: #ffffff; }
+:root[data-theme='dark'] .fam-night, :root[data-theme='dark'] .fam-holiday { --fam-ink: #0b1f45; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .fam-night, :root:not([data-theme='light']) .fam-holiday { --fam-ink: #0b1f45; } }
+.shift-pill { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 700; color: var(--fam-ink, #0b1f45); background: var(--fam, var(--muted)); letter-spacing: 0.01em; }
 .shift-pill.is-extra { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--shift-extra-ring); }
 .pill { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
 .pill-extra { background: rgba(255, 255, 255, 0.24); color: inherit; border: 1px solid currentColor; margin-left: 8px; }
@@ -262,3 +265,8 @@ input:not([type='checkbox']):not([type='radio']):not([type='range']), select, te
 .quick-event input::placeholder { color: var(--muted); }
 .home-salary { margin: 0; display: flex; flex-direction: column; gap: 2px; padding-top: 10px; border-top: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
 .home-salary strong { font-family: var(--font-display); font-size: var(--text-lg); }
+
+/* Grelha de turnos: tinta suave da cor do turno e uma barra à esquerda, para o texto manter contraste */
+.shift-cell { background: color-mix(in srgb, var(--chip, transparent) 16%, var(--panel)); box-shadow: inset 4px 0 0 var(--chip, transparent); }
+.shift-cell.is-outside { box-shadow: none; }
+.shift-cell .shift-cell-day .muted { color: var(--text); font-weight: 400; }

@@ -63,7 +63,7 @@ export const FAMILY_COLOR: Record<ShiftFamily, string> = {
   night: '#4A57D4',
   rest: '#34A872',
   leave: '#4FB0EC',
-  holiday: '#E0464C',
+  holiday: '#C62F35',
   other: '#8A94A6',
 }
 

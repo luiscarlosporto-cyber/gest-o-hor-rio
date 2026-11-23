@@ -15,7 +15,7 @@ export const DEFAULT_SHIFT_TYPES: ShiftType[] = [
   { code: 'DS', label: 'Descanso semanal', color: '#34A872', work: false },
   { code: 'DC', label: 'Descanso complementar', color: '#34A872', work: false },
   { code: 'F', label: 'Folga', color: '#34A872', work: false },
-  { code: 'Fe', label: 'Feriado', color: '#E0464C', work: false },
+  { code: 'Fe', label: 'Feriado', color: '#C62F35', work: false },
   { code: 'L', label: 'Férias', color: '#4FB0EC', work: false },
   { code: 'A', label: 'Ausência', color: '#8A94A6', work: false },
   { code: 'Cgs', label: 'Comissão gratuita de serviço', color: '#8A94A6', work: false },
