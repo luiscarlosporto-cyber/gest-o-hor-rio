@@ -6,19 +6,19 @@ import type { DateKey, Occurrence, ShiftDay, ShiftType } from './types'
  * São editáveis na app.
  */
 export const DEFAULT_SHIFT_TYPES: ShiftType[] = [
-  { code: 'MT2', label: 'Manhã e tarde', start: '08:30', end: '22:30', color: '#F4B183', work: true },
-  { code: 'M', label: 'Manhã', start: '08:30', end: '15:30', color: '#FFE699', work: true },
-  { code: 'T', label: 'Tarde', start: '15:00', end: '22:30', color: '#F8CBAD', work: true },
-  { code: '6:30 T', label: 'Tarde curta', start: '15:30', end: '22:30', color: '#F8CBAD', work: true },
-  { code: 'N', label: 'Noite', start: '22:00', end: '09:00', color: '#8EA9DB', work: true, paidHours: 9 },
-  { code: 'D', label: 'Descanso', color: '#C6E0B4', work: false },
-  { code: 'DS', label: 'Descanso semanal', color: '#E2EFDA', work: false },
-  { code: 'DC', label: 'Descanso complementar', color: '#E2EFDA', work: false },
-  { code: 'F', label: 'Folga', color: '#E2EFDA', work: false },
-  { code: 'Fe', label: 'Feriado', color: '#D9D9D9', work: false },
-  { code: 'L', label: 'Férias', color: '#A9D08E', work: false },
-  { code: 'A', label: 'Ausência', color: '#BFBFBF', work: false },
-  { code: 'Cgs', label: 'Comissão gratuita de serviço', color: '#BFBFBF', work: false },
+  { code: 'MT2', label: 'Manhã e tarde', start: '08:30', end: '22:30', color: '#F59A4A', work: true },
+  { code: 'M', label: 'Manhã', start: '08:30', end: '15:30', color: '#F2B233', work: true },
+  { code: 'T', label: 'Tarde', start: '15:00', end: '22:30', color: '#F07F63', work: true },
+  { code: '6:30 T', label: 'Tarde curta', start: '15:30', end: '22:30', color: '#F07F63', work: true },
+  { code: 'N', label: 'Noite', start: '22:00', end: '09:00', color: '#4A57D4', work: true, paidHours: 9 },
+  { code: 'D', label: 'Descanso', color: '#34A872', work: false },
+  { code: 'DS', label: 'Descanso semanal', color: '#34A872', work: false },
+  { code: 'DC', label: 'Descanso complementar', color: '#34A872', work: false },
+  { code: 'F', label: 'Folga', color: '#34A872', work: false },
+  { code: 'Fe', label: 'Feriado', color: '#E0464C', work: false },
+  { code: 'L', label: 'Férias', color: '#4FB0EC', work: false },
+  { code: 'A', label: 'Ausência', color: '#8A94A6', work: false },
+  { code: 'Cgs', label: 'Comissão gratuita de serviço', color: '#8A94A6', work: false },
 ]
 
 /** Intervalo que conta como trabalho: do início até ao fim, ou só as horas contadas do tipo. */

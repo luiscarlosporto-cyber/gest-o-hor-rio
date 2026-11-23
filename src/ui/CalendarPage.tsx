@@ -1,3 +1,4 @@
+import { chipStyle } from '../domain/shiftFamily'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { findConflicts, freeSlots } from '../domain/conflicts'
 import {
@@ -334,7 +335,7 @@ function ShiftPicker({ date, data, onPick, onClose }: { date: string; data: AppD
             <button
               key={t.code}
               className={`chip chip-shift chip-lg${t.code === current ? ' is-current' : ''}`}
-              style={{ ['--chip' as string]: t.color }}
+              style={chipStyle(t.color)}
               onClick={() => onPick(t.code)}
               title={t.label}
             >

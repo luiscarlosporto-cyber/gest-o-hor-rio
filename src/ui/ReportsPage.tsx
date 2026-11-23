@@ -1,3 +1,4 @@
+import { chipStyle } from '../domain/shiftFamily'
 import { useMemo, useState } from 'react'
 import { addMonths, formatMonthYear, parseLocal, weekdayShort } from '../domain/dates'
 import { estimatePay, premiumHours, projectSalary } from '../domain/payroll'
@@ -104,7 +105,7 @@ export function ReportsPage({ data, cursor, setCursor, update }: Props) {
             <ul className="code-list">
               {r.summary.counts.map((c) => (
                 <li key={c.code}>
-                  <span className="chip chip-shift" style={c.color ? { ['--chip' as string]: c.color } : undefined}>
+                  <span className="chip chip-shift" style={chipStyle(c.color)}>
                     {c.code}
                   </span>
                   <span>{c.label}</span>

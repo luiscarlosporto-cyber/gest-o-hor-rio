@@ -1,3 +1,4 @@
+import { chipStyle } from '../domain/shiftFamily'
 import { addDays, isSameDay, monthGrid, startOfDay, timeOf, toDateKey } from '../domain/dates'
 import type { Occurrence } from '../domain/types'
 
@@ -47,7 +48,7 @@ export function MonthView({ cursor, occurrences, conflictKeys, onDay, onOpen }: 
                   <button
                     type="button"
                     className="chip chip-shift"
-                    style={shift.color ? { ['--chip' as string]: shift.color } : undefined}
+                    style={chipStyle(shift.color)}
                     onClick={() => onOpen(shift)}
                   >
                     {shift.title}

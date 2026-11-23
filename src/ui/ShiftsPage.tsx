@@ -1,3 +1,4 @@
+import { chipStyle, ritmiaColor } from '../domain/shiftFamily'
 import { useMemo, useState } from 'react'
 import { addMonths, daysInMonth, formatMonthYear, monthGrid, toDateKey, weekdayShort } from '../domain/dates'
 import { mergeShiftDays, parseRosterLine, shiftErrors, summarizeMonth, findType, type RosterParseResult } from '../domain/shifts'
@@ -178,7 +179,7 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
                 key={key}
                 className={`shift-cell${outside ? ' is-outside' : ''}${errorDates.has(key) ? ' is-error' : ''}`}
                 title={errors.find((e) => e.date === key)?.message}
-                style={type ? { ['--chip' as string]: type.color } : undefined}
+                style={chipStyle(type?.color)}
               >
                 <span className="shift-cell-day">
                   {d.getDate()} <span className="muted">{weekdayShort(d)}</span>
@@ -220,7 +221,7 @@ export function ShiftsPage({ data, cursor, setCursor, update }: Props) {
 function ShiftBadge({ day, types }: { day: ShiftDay; types: ShiftType[] }) {
   const t = findType(types, day.code)
   return (
-    <span className={`badge${t ? '' : ' is-unknown'}`} style={t ? { ['--chip' as string]: t.color } : undefined} title={day.date}>
+    <span className={`badge${t ? '' : ' is-unknown'}`} style={chipStyle(t?.color)} title={day.date}>
       <small>{Number(day.date.slice(8))}</small>
       {day.code}
     </span>
@@ -238,8 +239,13 @@ function ShiftTypesEditor({ types, onChange }: { types: ShiftType[]; onChange: (
   }
   return (
     <section className="card">
-      <h2>Tipos de turno</h2>
-      <p className="muted">Sem horas = dia inteiro (descanso, folga, férias). Se o fim for antes do início, o turno acaba no dia seguinte.</p>
+      <div className="card-head">
+        <h2>Tipos de turno</h2>
+        <button className="btn btn-sm" onClick={() => onChange(types.map((t) => ({ ...t, color: ritmiaColor(t) })))}>
+          Usar as cores Ritmia
+        </button>
+      </div>
+      <p className="muted">Manhã âmbar, tarde coral, noite índigo, descanso verde, férias azul e feriado vermelho. Sem horas = dia inteiro (descanso, folga, férias). Se o fim for antes do início, o turno acaba no dia seguinte.</p>
       <div className="table-wrap">
         <table className="table">
           <thead>

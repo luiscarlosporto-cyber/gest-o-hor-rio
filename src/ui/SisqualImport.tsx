@@ -1,3 +1,4 @@
+import { chipStyle } from '../domain/shiftFamily'
 import { useRef, useState } from 'react'
 import { formatMonthYear } from '../domain/dates'
 import { defaultPaySettings } from '../domain/payroll'
@@ -94,7 +95,7 @@ export function SisqualImport({ data, update, onApplied }: Props) {
                 <span
                   key={d.date}
                   className={`badge${t ? '' : ' is-unknown'}${changed ? ' is-changed' : ''}`}
-                  style={t ? { ['--chip' as string]: t.color } : undefined}
+                  style={chipStyle(t?.color)}
                   title={d.raw !== d.code ? `${d.date}: ${d.raw}` : d.date}
                 >
                   <small>{Number(d.date.slice(8))}</small>

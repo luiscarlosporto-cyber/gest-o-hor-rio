@@ -1,3 +1,4 @@
+import { chipStyle } from '../domain/shiftFamily'
 import { useEffect, useMemo, useRef } from 'react'
 import { addDays, formatRange, isSameDay, minutesBetween, startOfDay, toDateKey, weekdayShort } from '../domain/dates'
 import type { Occurrence } from '../domain/types'
@@ -112,7 +113,7 @@ export function TimeGrid({ days, occurrences, conflictKeys, onSlot, onOpen, onDa
                   key={o.key}
                   type="button"
                   className={`chip${o.source === 'shift' ? ' chip-shift' : ` cat-${o.category}`}`}
-                  style={o.color ? { ['--chip' as string]: o.color } : undefined}
+                  style={chipStyle(o.color)}
                   onClick={() => onOpen(o)}
                   title={o.title}
                 >
@@ -159,7 +160,7 @@ export function TimeGrid({ days, occurrences, conflictKeys, onSlot, onOpen, onDa
                     height: p.height - 2,
                     left: `calc(${(p.col / p.cols) * 100}% + 2px)`,
                     width: `calc(${100 / p.cols}% - 4px)`,
-                    ...(o.color ? { ['--chip' as string]: o.color } : {}),
+                    ...chipStyle(o.color),
                   }}
                   onClick={() => onOpen(o)}
                   title={`${o.title} · ${formatRange(o.start, o.end, o.allDay)}`}

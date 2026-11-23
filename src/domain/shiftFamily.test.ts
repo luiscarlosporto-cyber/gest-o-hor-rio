@@ -39,3 +39,14 @@ describe('partes do dia e contagem decrescente', () => {
     expect(countdown(a, new Date(2026, 10, 25, 14, 0))).toBe('2 d 6 h')
   })
 })
+
+describe('cores dos turnos', () => {
+  it('dá a cada tipo a cor da sua família e um texto legível por cima', async () => {
+    const { ritmiaColor, inkFor } = await import('./shiftFamily')
+    const N = findType(DEFAULT_SHIFT_TYPES, 'N')!
+    expect(ritmiaColor(N)).toBe('#4A57D4')
+    expect(inkFor('#4A57D4')).toBe('#ffffff') // noite: texto branco
+    expect(inkFor('#F2B233')).toBe('#0b1f45') // manhã: texto escuro
+    expect(inkFor('#E2EFDA')).toBe('#0b1f45') // pastel antigo: texto escuro
+  })
+})

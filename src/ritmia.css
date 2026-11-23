@@ -250,3 +250,8 @@ input:not([type='checkbox']):not([type='radio']):not([type='range']), select, te
   .home-day { padding: 8px 2px; }
   .shift-pill { min-width: 0; padding: 2px 5px; font-size: 11px; }
 }
+
+/* Chips de turno: fundo na cor do tipo e texto legível calculado (--chip-ink) */
+.chip-shift, .badge { color: var(--chip-ink, var(--shift-ink)); }
+.chip-shift { border-radius: var(--radius-pill); padding: 1px 9px; font-weight: 700; }
+.shift-cell { border-radius: var(--radius-sm); }
