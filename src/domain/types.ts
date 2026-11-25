@@ -113,6 +113,23 @@ export interface PaySettings {
   adsePct?: number
   /** Taxa de retenção de IRS, em % (do talão). */
   irsPct?: number
+  /** Retroativos a receber (ex.: prémio ganho em tribunal), conferidos pelos talões. */
+  retro?: RetroClaim
+}
+
+/** Um retroativo devido, pago aos poucos nos talões numa rubrica própria. */
+export interface RetroClaim {
+  /** Nome curto (ex.: "Prémio 14,28% — retroativos"). */
+  name: string
+  /** Código da rubrica no talão (ex.: "710 310"). */
+  code: string
+  /** Primeiro e último mês devidos (AAAA-MM). */
+  from: string
+  until: string
+  /** Meses (0-11) que não contam (o prémio não é pago em junho = 5). */
+  skipMonths: number[]
+  /** Valor oficial devido por ano (do apuramento do processo), em euros. */
+  official: Record<string, number>
 }
 
 export interface AppData {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyData } from '../data/store'
 import { defaultPaySettings } from './payroll'
-import { checkPayslip, parsePayslip, ptNumber, settingsFromPayslip, slipKey, type SlipText } from './payslip'
+import { checkPayslip, parsePayslip, parsePayslipPages, ptNumber, settingsFromPayslip, slipKey, type SlipText } from './payslip'
 
 // Talão fictício com a mesma disposição do talão da ULS (valores inventados).
 const row = (y: number, ...cells: [number, string][]): SlipText[] => cells.map(([x, str]) => ({ x, y, str }))
@@ -79,5 +79,40 @@ describe('talão de vencimento', () => {
     expect(settings).toMatchObject({ category: 'Enfermeiro especialista', position: 3, level: 31, irsPct: 20, mealPerDay: 6.15 })
     expect(changes).toHaveLength(4)
     expect(settingsFromPayslip(parsePayslip(items), settings).changes).toEqual([])
+  })
+})
+
+describe('talão com várias páginas e valores com redução', () => {
+  // 2.ª página: repete o cabeçalho, sem o título "Descontos", e continua os abonos.
+  const page2: SlipText[] = [
+    ...row(166, [14, 'Relativo a'], [86, '2026 / Julho']),
+    ...row(214, [21, 'Abonos'], [156, 'TP'], [168, 'Quant.'], [200, 'Val. s/ Redu.'], [257, 'Val. c/ Redu.']),
+    ...row(237, [11, '710'], [30, '310'], [45, 'Prémio (em valor) - retro'], [139, '16/05'], [229, '171,57'], [284, '169,17*']),
+    ...row(249, [11, '710'], [30, '310'], [45, 'Prémio (em valor) - retro'], [139, '16/07'], [229, '165,85'], [284, '165,85']),
+    ...row(511, [283, '2.247,50']),
+    ...row(512, [193, 'Total Ilíquido'], [521, '290,00']),
+    ...row(513, [423, 'Total Descontos']),
+  ]
+
+  it('junta as rubricas de todas as páginas e usa o valor com redução', () => {
+    const s = parsePayslipPages([items, page2])
+    const retro = s.earnings.filter((l) => l.code === '710 310')
+    expect(retro.map((l) => [l.ref, l.amount])).toEqual([
+      ['2016-05', 169.17],
+      ['2016-07', 165.85],
+    ])
+    expect(s.earnings).toHaveLength(9)
+    expect(s.deductions).toHaveLength(2)
+    expect(s).not.toHaveProperty('splitX')
+  })
+
+  it('ignora páginas que não são do mesmo talão', () => {
+    const s = parsePayslipPages([items, [{ x: 10, y: 10, str: 'Página em branco' }]])
+    expect(s.earnings).toHaveLength(7)
+  })
+
+  it('lê "165,93*" como valor', () => {
+    expect(ptNumber('165,93*')).toBe(165.93)
+    expect(ptNumber('-27,62 *')).toBe(-27.62)
   })
 })

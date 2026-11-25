@@ -5,7 +5,7 @@ import { useAppData } from './state/useAppData'
 import { useCloud } from './state/useCloud'
 import type { View } from './ui/CalendarPage'
 import type { Theme } from './ui/SettingsPage'
-import { IconAssistant, IconCalendar, IconHome, IconMore, IconReport, IconSearch, IconSettings, IconShifts, IconTasks } from './ui/icons'
+import { IconAssistant, IconCalendar, IconHome, IconMore, IconReport, IconRetro, IconSearch, IconSettings, IconShifts, IconTasks } from './ui/icons'
 import ritmiaMark from './assets/ritmia-mark.png'
 import { GlobalSearch } from './ui/GlobalSearch'
 import { HomePage } from './ui/HomePage'
@@ -20,12 +20,13 @@ const SettingsPage = lazy(() => import('./ui/SettingsPage').then((m) => ({ defau
 const ShiftsPage = lazy(() => import('./ui/ShiftsPage').then((m) => ({ default: m.ShiftsPage })))
 const ReportsPage = lazy(() => import('./ui/ReportsPage').then((m) => ({ default: m.ReportsPage })))
 const AssistantPage = lazy(() => import('./ui/AssistantPage').then((m) => ({ default: m.AssistantPage })))
+const RetroPage = lazy(() => import('./ui/RetroPage').then((m) => ({ default: m.RetroPage })))
 const TasksPage = lazy(() => import('./ui/TasksPage').then((m) => ({ default: m.TasksPage })))
 
 /** Assistente IA desligado a pedido do utilizador (23/11/2026): não usar a API paga. O código fica guardado. */
 const ASSISTANT_ENABLED = false
 
-type Page = 'home' | 'calendar' | 'tasks' | 'assistant' | 'shifts' | 'reports' | 'settings'
+type Page = 'home' | 'calendar' | 'tasks' | 'assistant' | 'shifts' | 'reports' | 'retro' | 'settings'
 
 const readPref = <T extends string>(key: string, fallback: T): T => {
   try {
@@ -174,6 +175,10 @@ export default function App({ store: injected }: { store?: DataStore }) {
 
   return (
     <div className="app">
+      {/* No telemóvel a pesquisa fica no canto de cima, fora da barra (o desfoque da barra prendia-a por cima de "Mais"). */}
+      <button className="global-search-btn global-search-fab" onClick={() => setSearchOpen(true)} aria-label="Abrir a pesquisa">
+        <IconSearch />
+      </button>
       <nav className="sidebar" aria-label="Navegação">
         <div className="brand">
           <img className="brand-mark" src={ritmiaMark} alt="" width={36} height={36} />
@@ -193,13 +198,14 @@ export default function App({ store: injected }: { store?: DataStore }) {
         <NavItem icon={<IconTasks />} label="Tarefas" badge={pendingCount(data.tasks, new Date())} active={page === 'tasks'} onClick={() => go('tasks')} />
         {ASSISTANT_ENABLED && <NavItem icon={<IconAssistant />} label="Assistente" secondary active={page === 'assistant'} onClick={() => go('assistant')} />}
         <NavItem icon={<IconReport />} label="Relatórios" secondary active={page === 'reports'} onClick={() => go('reports')} />
+        <NavItem icon={<IconRetro />} label="Retroativos" secondary active={page === 'retro'} onClick={() => go('retro')} />
         <NavItem icon={<IconSettings />} label="Definições" secondary active={page === 'settings'} onClick={() => go('settings')} />
         <NavItem
           icon={<IconMore />}
           label="Mais"
           mobileOnly
           expanded={moreOpen}
-          active={moreOpen || page === 'assistant' || page === 'reports' || page === 'settings'}
+          active={moreOpen || page === 'assistant' || page === 'reports' || page === 'retro' || page === 'settings'}
           onClick={() => setMoreOpen((o) => !o)}
         />
         <div className="sidebar-foot small">
@@ -252,6 +258,7 @@ export default function App({ store: injected }: { store?: DataStore }) {
           />
         )}
         {page === 'reports' && <ReportsPage data={data} update={update} cursor={cursor} setCursor={setCursor} />}
+        {page === 'retro' && <RetroPage data={data} update={update} />}
         {page === 'calendar' && <CalendarPage data={data} update={update} cursor={cursor} setCursor={setCursor} view={view} setView={setView} />}
         {page === 'tasks' && <TasksPage data={data} update={update} cloud={cloud} />}
         {ASSISTANT_ENABLED && page === 'assistant' && <AssistantPage data={data} update={update} signedIn={store.kind === 'supabase' && Boolean(cloud.session)} />}
@@ -269,6 +276,9 @@ export default function App({ store: injected }: { store?: DataStore }) {
             )}
             <button role="menuitem" className="more-item" onClick={() => go('reports')}>
               <IconReport /> <span>Relatórios e vencimento</span>
+            </button>
+            <button role="menuitem" className="more-item" onClick={() => go('retro')}>
+              <IconRetro /> <span>Retroativos</span>
             </button>
             <button role="menuitem" className="more-item" onClick={() => go('settings')}>
               <IconSettings /> <span>Definições</span>

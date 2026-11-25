@@ -35,8 +35,9 @@ export interface Payslip {
 const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 
 /** "2.624,97" → 2624.97; ",00" → 0; "-6,15" → -6.15 */
-export const ptNumber = (s: string) => Number(s.trim().replace(/\./g, '').replace(',', '.'))
-const isAmount = (s: string) => /^-?[\d.]*,\d{2}$/.test(s.trim())
+export const ptNumber = (s: string) => Number(s.trim().replace(/\s*\*$/, '').replace(/\./g, '').replace(',', '.'))
+/** Valores do talão; um "*" no fim marca o valor com redução (ex.: "165,93*"). */
+const isAmount = (s: string) => /^-?[\d.]*,\d{2}\s*\*?$/.test(s.trim())
 const isRef = (s: string) => /^\d{2}\/\d{2}$/.test(s.trim())
 const refKey = (s: string) => `20${s.slice(0, 2)}-${s.slice(3, 5)}`
 
@@ -94,7 +95,7 @@ function parseColumn(items: SlipText[], codeX: number, labelX: number, kind: 'ea
   return lines.map(({ y: _y, ...l }) => l)
 }
 
-export function parsePayslip(items: SlipText[]): Payslip {
+export function parsePayslip(items: SlipText[], splitAt?: number): Payslip & { splitX: number } {
   const find = (re: RegExp) => items.find((i) => re.test(i.str.trim()))
   const rightOf = (label: SlipText | undefined, test: (s: string) => boolean, dy = 3) =>
     label ? items.filter((i) => Math.abs(i.y - label.y) <= dy && i.x > label.x && test(i.str)).sort((a, b) => a.x - b.x)[0] : undefined
@@ -115,8 +116,9 @@ export function parsePayslip(items: SlipText[]): Payslip {
   const head = find(/^Abonos$/)
   const descHead = find(/^Descontos$/)
   const totalLabel = find(/^Total Ilíquido$/)
-  if (!head || !descHead || !totalLabel) throw new Error('Não encontrei a tabela de abonos e descontos.')
-  const splitX = descHead.x - 8
+  // Nas páginas seguintes de um talão longo o título "Descontos" pode faltar: usa-se a coluna da 1.ª página.
+  if (!head || !totalLabel || (!descHead && splitAt === undefined)) throw new Error('Não encontrei a tabela de abonos e descontos.')
+  const splitX = descHead ? descHead.x - 8 : splitAt!
   const body = items.filter((i) => i.y > head.y + 4 && i.y < totalLabel.y - 4)
   const left = body.filter((i) => i.x < splitX)
   const right = body.filter((i) => i.x >= splitX)
@@ -125,7 +127,7 @@ export function parsePayslip(items: SlipText[]): Payslip {
   const codeXRight = Math.min(...right.filter((i) => /^\d{3}$/.test(i.str.trim())).map((i) => i.x))
   const labelXRight = Math.min(...right.filter((i) => /\p{L}/u.test(i.str)).map((i) => i.x))
   const earnings = parseColumn(left, codeXLeft, labelXLeft, 'earning')
-  const deductions = parseColumn(right, codeXRight, labelXRight, 'deduction')
+  const deductions = right.length ? parseColumn(right, codeXRight, labelXRight, 'deduction') : []
 
   const near = (label: SlipText | undefined) =>
     label
@@ -150,7 +152,28 @@ export function parsePayslip(items: SlipText[]): Payslip {
     gross,
     totalDeductions,
     net: Math.round((gross - totalDeductions) * 100) / 100,
+    splitX,
   }
+}
+
+/**
+ * Talão com várias páginas: cada página repete o cabeçalho e os totais, e continua a lista de abonos e descontos.
+ * Lê cada página e junta as rubricas.
+ */
+export function parsePayslipPages(pages: SlipText[][]): Payslip {
+  const first = parsePayslip(pages[0] ?? [])
+  const parsed: Payslip[] = [first]
+  // Páginas seguintes que não sejam do talão (ex.: uma folha em branco) ficam de fora.
+  for (const items of pages.slice(1)) {
+    try {
+      const p = parsePayslip(items, first.splitX)
+      if (p.year === first.year && p.month === first.month) parsed.push(p)
+    } catch {
+      /* página sem tabela */
+    }
+  }
+  const { splitX: _splitX, ...slip } = first
+  return { ...slip, earnings: parsed.flatMap((p) => p.earnings), deductions: parsed.flatMap((p) => p.deductions) }
 }
 
 // ---------- Confronto talão × horário ----------
