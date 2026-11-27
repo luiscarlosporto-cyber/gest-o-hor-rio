@@ -478,7 +478,10 @@ kbd { font-family: inherit; font-size: 12px; border: 1px solid var(--line); bord
 .search-title { font-weight: 500; }
 .global-search-btn { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 8px; padding: 7px 10px; margin: 4px 0 8px; text-align: left; }
 .global-search-btn kbd { margin-left: auto; font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.global-search-fab { display: none; }
 @media (max-width: 860px) {
+  .sidebar .global-search-btn { display: none; }
+  .global-search-fab { display: flex; }
   .search-backdrop { padding-top: 12px; }
   .global-search-btn { position: fixed; top: 10px; right: 12px; z-index: 20; margin: 0; width: 44px; height: 44px; justify-content: center; border-radius: 999px; box-shadow: var(--shadow-lg); }
   .global-search-btn span, .global-search-btn kbd { display: none; }
@@ -523,3 +526,28 @@ kbd { font-family: inherit; font-size: 12px; border: 1px solid var(--line); bord
 .danger-zone { border: 1px solid var(--danger); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .danger-zone input { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--raised); color: var(--text); font: inherit; min-height: 40px; }
 @media (max-width: 860px) { .audit-list li { grid-template-columns: auto 1fr; } .audit-list li > :last-child { grid-column: 1 / -1; } }
+
+/* Retroativos */
+.page-retro { max-width: 760px; }
+.retro-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 12px; }
+.retro-stats > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.retro-value { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.retro-value.is-paid { color: var(--accent); }
+.retro-value.is-missing, .retro-table .is-missing { color: var(--danger); }
+.retro-table .is-over { color: var(--muted); }
+.retro-bar { height: 10px; border-radius: 999px; background: var(--line-soft, var(--line)); overflow: hidden; margin-bottom: 8px; }
+.retro-bar > span { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+.retro-year { cursor: pointer; }
+.retro-year .link-btn { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; }
+.retro-month td { font-size: 12.5px; padding-top: 3px; padding-bottom: 3px; }
+.retro-month td:first-child { padding-left: 22px; }
+.retro-month.is-falta td:first-child, .retro-month.is-falta td:last-child { color: var(--danger); }
+.retro-month.is-abaixo td:nth-child(2) { color: var(--warn, #b26a00); }
+.retro-total th, .retro-total td { font-weight: 700; border-top: 2px solid var(--line); }
+.retro-official { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-bottom: 12px; }
+@media (max-width: 860px) {
+  .retro-value { font-size: 17px; white-space: nowrap; overflow-wrap: normal; }
+  .retro-stats { gap: 8px; }
+  .retro-table { font-size: 13px; }
+  .retro-table th, .retro-table td { padding-left: 4px; padding-right: 4px; }
+}

@@ -41,6 +41,13 @@ export const IconReport = () => (
   </svg>
 )
 
+export const IconRetro = () => (
+  <svg {...base}>
+    <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
+    <path d="M7 15h4M7 11h10" />
+  </svg>
+)
+
 export const IconSearch = () => (
   <svg {...base}>
     <circle cx="11" cy="11" r="6.5" />
